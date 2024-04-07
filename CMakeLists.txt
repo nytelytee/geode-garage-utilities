@@ -45,7 +45,7 @@ add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 if (MSVC)
     target_compile_options(${PROJECT_NAME} PUBLIC "/W4")
 else()
-    target_compile_options(${PROJECT_NAME} PUBLIC "-Wall -Wextra -Wpedantic")
+    target_compile_options(${PROJECT_NAME} PUBLIC "-Wall" "-Wextra" "-Wpedantic")
 endif()
 
 # Set up dependencies, resources, link Geode
