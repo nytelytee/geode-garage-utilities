@@ -89,10 +89,10 @@ void recalculateIconOrder() {
       bool isUnlocked = gm->isIconUnlocked(i, UNLOCK_TO_ICON[unlockType]);
       bool isVanilla = i <= VANILLA_MAX_ICONS[unlockType];
 
-      bool passesIconTypeFilter = isVanilla && iconKitState.settings.vanilla || !isVanilla && iconKitState.settings.custom;
+      bool passesIconTypeFilter = (isVanilla && iconKitState.settings.vanilla) || (!isVanilla && iconKitState.settings.custom);
       if (!passesIconTypeFilter) { denied->push_back(i); continue; }
 
-      bool passesStateFilter = isUnlocked && iconKitState.settings.unlocked || !isUnlocked && iconKitState.settings.locked;
+      bool passesStateFilter = (isUnlocked && iconKitState.settings.unlocked) || (!isUnlocked && iconKitState.settings.locked);
       if (!passesStateFilter) { denied->push_back(i); continue; }
 
       // only the above 2 are applicable for custom icons, so if it passes them it's accepted

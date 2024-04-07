@@ -7,7 +7,7 @@ class BoundCCMenu : public CCMenu {
 protected:
   CCRect m_bound;
 
-  bool init(CCRect worldSpaceBound) { m_bound = worldSpaceBound; return CCMenu::init(); }
+  bool initWithRect(CCRect worldSpaceBound) { m_bound = worldSpaceBound; return CCMenu::init(); }
 
   bool ccTouchBegan(CCTouch *, CCEvent *) override;
   void ccTouchEnded(CCTouch *, CCEvent *) override;
@@ -19,7 +19,7 @@ public:
 
   static BoundCCMenu *create(CCRect worldSpaceBound) {
   	auto a = new BoundCCMenu();
-    if (a && a->init(worldSpaceBound)){ a->autorelease(); return a; }
+    if (a && a->initWithRect(worldSpaceBound)){ a->autorelease(); return a; }
     CC_SAFE_DELETE(a);
     return nullptr;
   }

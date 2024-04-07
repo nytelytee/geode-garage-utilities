@@ -3,8 +3,8 @@
 
 using namespace geode::prelude;
 
+$on_mod(Loaded) {
 
-$execute {
   if (Mod::get()->hasSavedValue("iconKitSettings")) iconKitState.settings = Mod::get()->getSavedValue<IconKitSettings>("iconKitSettings");
   else iconKitState.settings.initDefault();
 

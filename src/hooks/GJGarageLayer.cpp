@@ -65,25 +65,15 @@ struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
     int itemID = item ? item->getTag() : -1;
 
     UnlockType selectedUnlockType;
-    IconType selectedIconType;
-    if (iconKitState.selectedIconType == IconType::DeathEffect) {
+    if (iconKitState.selectedIconType == IconType::DeathEffect)
       selectedUnlockType = UnlockType::Death;
-      selectedIconType = IconType::DeathEffect;
-    } else if (!SHOULD_CHANGE_ICON_TYPE(iconKitState.selectedIconType)) {
+    else if (!SHOULD_CHANGE_ICON_TYPE(iconKitState.selectedIconType))
       // if someone reading this knows of a better way to fetch the icon type of a just clicked icon on a special page, please let me know, i hate this
       // these 2 are nested differently, Streaks have 6 parents up until they reach the GJGarageLayer, but ship fires have 7
       // animations have 3, but those don't matter since their callback is not onSelect, but onToggleItem
-      if (item->getParent()->getParent()->getParent()->getParent()->getParent()->getParent() == this) {
-        selectedUnlockType = UnlockType::Streak;
-        selectedIconType = IconType::Special;
-      } else {
-        selectedUnlockType = UnlockType::ShipFire;
-        selectedIconType = IconType::ShipFire;
-      }
-    } else {
-      selectedUnlockType = ICON_TO_UNLOCK[iconKitState.selectedIconType];
-      selectedIconType = iconKitState.selectedIconType;
-    }
+      if (item->getParent()->getParent()->getParent()->getParent()->getParent()->getParent() == this) selectedUnlockType = UnlockType::Streak;
+      else selectedUnlockType = UnlockType::ShipFire;
+    else selectedUnlockType = ICON_TO_UNLOCK[iconKitState.selectedIconType];
     
     // hold shift when clicking an icon to always open the icon popup, rather than selecting it, even if the icon is unlocked and unselected
     if (!Mod::get()->getSettingValue<bool>("disable-shift-clicking-on-icons"))
@@ -259,7 +249,7 @@ struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
     FilterAndSortPopup::create()->show();
   }
 
-  bool init() {
+  bool init() override {
     recalculateIconOrder();
     if (!GJGarageLayer::init()) return false;
 

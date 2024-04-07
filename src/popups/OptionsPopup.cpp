@@ -71,15 +71,12 @@ void OptionsPopup::addOptionInfo(int tag, const char* description) {
 bool OptionsPopup::setup(bool gameVar, FilterAndSortPopup *parent) {
   parentPopup = parent;
 
-  auto winSize = CCDirector::sharedDirector()->getWinSize();
-
   this->setTitle(gameVar ? "Player Options" : "Icon Kit Display Options");
   
   float titleMargin = m_bgSprite->boundingBox().getMaxY() - m_title->boundingBox().getMaxY() - TOP_BORDER_SIZE;
   float titleHeight = m_title->getScale()*m_title->getContentSize().height;
   float realTitleHeight = 2*titleMargin + titleHeight;
   float separatorHeight = 1;
-  CCSize contentSize = m_size - CCPoint{2*HORIZONTAL_BORDER_SIZE, realTitleHeight + BOTTOM_BORDER_SIZE + TOP_BORDER_SIZE};
 
   auto separator = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separatorHeight);
   separator->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - titleMargin);

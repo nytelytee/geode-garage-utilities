@@ -121,11 +121,7 @@ bool FilterAndSortPopup::setup() {
   this->setTitle("Filter & Sort");
   float separator_height = 1;
   float title_margin = m_bgSprite->boundingBox().getMaxY() - m_title->boundingBox().getMaxY() - TOP_BORDER_SIZE;
-  float title_height = m_title->getScaledContentSize().height;
-  float real_title_height = 2*title_margin + title_height;
   float delta = 20;
-
-  CCSize contentSize = m_size - CCPoint{2*HORIZONTAL_BORDER_SIZE, real_title_height + BOTTOM_BORDER_SIZE + TOP_BORDER_SIZE};
 
   auto separator = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
   separator->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - title_margin);

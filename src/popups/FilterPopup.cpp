@@ -30,8 +30,6 @@ void FilterPopup::postCustomSetup() {
 }
 
 void FilterPopup::preCustomSetup() {
-  auto winSize = CCDirector::sharedDirector()->getWinSize();
-
   this->setTitle("Filter");
   
   float separatorHeight = 1;
