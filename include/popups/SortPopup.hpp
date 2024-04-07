@@ -9,14 +9,11 @@ using namespace geode::prelude;
 class SortPopup : public Popup<FilterAndSortPopup *> {
 protected:
 
-  CCNode *sortingList;
-  CCMenu *sortingButtonMenu;
+  CCNode *m_sortingList;
   FilterAndSortPopup *parentPopup;
 
-  static const GLubyte EVEN_OPACITY = 32;
-  static const GLubyte ODD_OPACITY = 16;
-  static const GLubyte RED_EVEN_OPACITY = 64;
-  static const GLubyte RED_ODD_OPACITY = 32;
+  static const GLubyte EVEN_BACKGROUND_OPACITY = 32;
+  static const GLubyte ODD_BACKGROUND_OPACITY = 16;
 
   bool setup(FilterAndSortPopup *) override;
 

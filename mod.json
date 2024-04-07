@@ -7,7 +7,11 @@
   "developer": "NyteLyte",
   "description": "Adds extra features to the garage: filtering and sorting, arrows to unlock info popup, and more.",
   "repository": "https://github.com/nytelytee/geode-garage-utilities.git",
-  "resources": {"spritesheets": {"GarageUtilitiesNavdotButtonSheet": ["resources/GU_navDotButton_denied.png", "resources/GU_navDotButton_mixed.png"]}, "sprites": ["resources/GU_button_01.png"]},
+  "resources": {
+    "spritesheets": {"GarageUtilitiesNavdotButtonSheet": ["resources/GU_navDotButton_denied.png", "resources/GU_navDotButton_mixed.png"]},
+    "sprites": ["resources/GU_button_01.png"],
+    "files": ["resources/examples/*.png"]
+  },
   "settings": {
     "hide-player-options-button":      {"name": "Hide Player Options Button",      "type": "bool", "default": false},
     "hide-filter-and-sort-button":     {"name": "Hide Filter and Sort Button",     "type": "bool", "default": false},

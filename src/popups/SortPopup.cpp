@@ -26,15 +26,9 @@ void SortPopup::onToggle(CCObject *sender) {
 
 void SortPopup::recalculateListItemBackgrounds() {
   for (int i = 0; i < SORT_TYPE_COUNT; i++) {
-    CCLayerColor *listBackground = getChild<CCLayerColor>(sortingList, 3*i);
-    if (iconKitState.pendingSettings.isSortedBy(iconKitState.pendingSettings.sortBy[i])) {
-      listBackground->setColor({0, 0, 0});
-      listBackground->setOpacity(ODD_OPACITY * (i & 1) + EVEN_OPACITY * !(i & 1));
-    }
-    else {
-      listBackground->setColor({255, 0, 0});
-      listBackground->setOpacity(RED_ODD_OPACITY * (i & 1) + RED_EVEN_OPACITY * !(i & 1));
-    }
+    CCLayerColor *listItemForeground = getChild<CCLayerColor>(m_sortingList, 5*i+4);
+    if (iconKitState.pendingSettings.isSortedBy(iconKitState.pendingSettings.sortBy[i])) listItemForeground->setOpacity(0);
+    else listItemForeground->setOpacity(75);
   }
 }
 
@@ -49,28 +43,31 @@ void SortPopup::onArrow(CCObject *sender) {
   std::swap(iconKitState.pendingSettings.sortBy[listItem], iconKitState.pendingSettings.sortBy[listItem + action]);
   std::swap(iconKitState.pendingSettings.sortIsReverse[listItem], iconKitState.pendingSettings.sortIsReverse[listItem + action]);
   
-  int labelIndex = 3*listItem + 2;
-  int swapWithLabelIndex = labelIndex + 3*action;
+  int labelIndex = 5*listItem + 2;
+  int swapWithLabelIndex = labelIndex + 5*action;
 
-  int sortOrderIndex = 3*listItem + 2;
-  int swapWithSortOrderIndex = sortOrderIndex + 3*action;
+  int menuIndex = 5*listItem + 3;
+  int swapWithMenuIndex = menuIndex + 5*action;
+  
+  CCMenu* menu = getChild<CCMenu>(m_sortingList, menuIndex);
+  CCMenu* swapWithMenu = getChild<CCMenu>(m_sortingList, swapWithMenuIndex);
 
-  CCMenuItemSpriteExtra *sortOrder = getChild<CCMenuItemSpriteExtra>(sortingButtonMenu, sortOrderIndex);
-  CCMenuItemSpriteExtra *swapWithSortOrder = getChild<CCMenuItemSpriteExtra>(sortingButtonMenu, swapWithSortOrderIndex);
+  CCMenuItemSpriteExtra *sortOrder = getChild<CCMenuItemSpriteExtra>(menu, 2);
+  CCMenuItemSpriteExtra *swapWithSortOrder = getChild<CCMenuItemSpriteExtra>(swapWithMenu, 2);
 
   std::string sortOrderState = getChild<IconButtonSpriteNoText>(sortOrder, 0)->getBGName();
   std::string swapWithOrderState = getChild<IconButtonSpriteNoText>(swapWithSortOrder, 0)->getBGName();
   getChild<IconButtonSpriteNoText>(sortOrder, 0)->setBG(swapWithOrderState.c_str(), false);
   getChild<IconButtonSpriteNoText>(swapWithSortOrder, 0)->setBG(sortOrderState.c_str(), false);
 
-  CCLabelBMFont *label = getChild<CCLabelBMFont>(sortingList, labelIndex);
-  CCLabelBMFont *swapWithLabel = getChild<CCLabelBMFont>(sortingList, swapWithLabelIndex);
+  CCLabelBMFont *label = getChild<CCLabelBMFont>(m_sortingList, labelIndex);
+  CCLabelBMFont *swapWithLabel = getChild<CCLabelBMFont>(m_sortingList, swapWithLabelIndex);
 
   CCPoint tempPosition = swapWithLabel->getPosition();
   swapWithLabel->setPosition(label->getPosition());
   label->setPosition(tempPosition);
 
-  sortingList->swapChildIndices(label, swapWithLabel);
+  m_sortingList->swapChildIndices(label, swapWithLabel);
 
   recalculateListItemBackgrounds();
 }
@@ -95,43 +92,46 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
 
   CCSize contentSize = m_size - CCPoint{2*HORIZONTAL_BORDER_SIZE, real_title_height + BOTTOM_BORDER_SIZE + TOP_BORDER_SIZE};
   
-  sortingList = CCNode::create();
-  sortingList->setAnchorPoint({0, 1});
-  sortingList->setPosition(HORIZONTAL_BORDER_SIZE, BOTTOM_BORDER_SIZE + contentSize.height);
+  m_sortingList = CCNode::create();
+  m_sortingList->setAnchorPoint({0, 1});
+  m_sortingList->setPosition(HORIZONTAL_BORDER_SIZE, BOTTOM_BORDER_SIZE + contentSize.height);
 
-  CCLabelBMFont *numbers[SORT_TYPE_COUNT];
-  CCLabelBMFont *sortLabels[SORT_TYPE_COUNT];
   CCLayerColor  *listItemBackgrounds[SORT_TYPE_COUNT];
+  CCLabelBMFont *listItemNumbers[SORT_TYPE_COUNT];
+  CCLabelBMFont *listItemSortLabels[SORT_TYPE_COUNT];
+  CCMenu* listItemMenus[SORT_TYPE_COUNT];
+  CCLayerColor  *listItemForegrounds[SORT_TYPE_COUNT];
   
   float numberWidth = -1;
   float sortLabelWidth = -1;
   float textHeight = 32.5;
   float pad = 5;
   for (int i = 0; i < SORT_TYPE_COUNT; i++) {
-    numbers[i] = CCLabelBMFont::create(fmt::format("{}. ", i+1).c_str(), "bigFont.fnt");
-    numbers[i]->setAnchorPoint({1, 1});
-    numberWidth = std::max(numberWidth, numbers[i]->getContentWidth());
+    listItemNumbers[i] = CCLabelBMFont::create(fmt::format("{}. ", i+1).c_str(), "bigFont.fnt");
+    listItemNumbers[i]->setAnchorPoint({1, 0.5});
+    numberWidth = std::max(numberWidth, listItemNumbers[i]->getContentWidth());
 
-    sortLabels[i] = CCLabelBMFont::create((SORT_TYPE_NAMES[iconKitState.pendingSettings.sortBy[i]] + " ").c_str(), "bigFont.fnt");
-    sortLabels[i]->setAnchorPoint({0, 1});
-    sortLabelWidth = std::max(sortLabelWidth, sortLabels[i]->getContentWidth());
+    listItemSortLabels[i] = CCLabelBMFont::create((SORT_TYPE_NAMES[iconKitState.pendingSettings.sortBy[i]] + " ").c_str(), "bigFont.fnt");
+    listItemSortLabels[i]->setAnchorPoint({0, 0.5});
+    sortLabelWidth = std::max(sortLabelWidth, listItemSortLabels[i]->getContentWidth());
+
+    listItemMenus[i] = CCMenu::create();
+    listItemMenus[i]->setAnchorPoint({0, 1});
+    listItemMenus[i]->ignoreAnchorPointForPosition(false);
   }
 
   CCSize listItemSize{pad + numberWidth + sortLabelWidth + pad, pad + textHeight + pad};
-  sortingList->setContentSize({0, SORT_TYPE_COUNT*listItemSize.height});
+  m_sortingList->setContentSize({0, SORT_TYPE_COUNT*listItemSize.height});
   
-  numbers[0]->setPosition(CCPoint{pad + numberWidth, sortingList->getContentSize().height - pad});
-  sortLabels[0]->setPosition(numbers[0]->getPosition());
+  listItemNumbers[0]->setPosition(CCPoint{pad + numberWidth, m_sortingList->getContentSize().height - pad - listItemNumbers[0]->getContentHeight()/2});
+  listItemSortLabels[0]->setPosition(listItemNumbers[0]->getPosition());
+  listItemMenus[0]->setPosition(CCPoint{listItemSize.width - pad, m_sortingList->getContentSize().height});
 
   for (int i = 1; i < SORT_TYPE_COUNT; i++) {
-    numbers[i]->setPosition(numbers[i-1]->getPosition() - CCPoint{0, listItemSize.height});
-    sortLabels[i]->setPosition(sortLabels[i-1]->getPosition() - CCPoint{0, listItemSize.height});
+    listItemNumbers[i]->setPosition(listItemNumbers[i-1]->getPosition() - CCPoint{0, listItemSize.height});
+    listItemSortLabels[i]->setPosition(listItemSortLabels[i-1]->getPosition() - CCPoint{0, listItemSize.height});
+    listItemMenus[i]->setPosition(listItemMenus[i-1]->getPosition() - CCPoint{0, listItemSize.height});
   }
-  
-  sortingButtonMenu = CCMenu::create();
-  sortingButtonMenu->setContentSize({0, SORT_TYPE_COUNT * listItemSize.height});
-  sortingButtonMenu->setAnchorPoint({0, 1});
-  sortingButtonMenu->setPosition({pad + numberWidth + sortLabelWidth, sortingList->getContentHeight() - sortingButtonMenu->getContentHeight()});
   
   float menuWidth = 0;
   float menuGap = 5;
@@ -151,11 +151,6 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
     moveUpButtonSprite->setScale((listItemSize.height - 2*pad) / moveUpButtonSprite->getScaledContentSize().height);
     moveDownButtonSprite->setScale((listItemSize.height - 2*pad) / moveDownButtonSprite->getScaledContentSize().height);
     reverseSortOrderButtonSprite->setScale((listItemSize.height - 2*pad) / reverseSortOrderButtonSprite->getScaledContentSize().height);
-    /*
-    moveUpButtonSprite->setScale(0.75);
-    moveDownButtonSprite->setScale(0.75);
-    reverseSortOrderButtonSprite->setScale(0.75);
-    */
 
     CCMenuItemSpriteExtra *moveUp = CCMenuItemSpriteExtra::create(moveUpButtonSprite, this, menu_selector(SortPopup::onArrow));
     CCMenuItemSpriteExtra *moveDown = CCMenuItemSpriteExtra::create(moveDownButtonSprite, this, menu_selector(SortPopup::onArrow));
@@ -165,9 +160,7 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
     moveDown->setTag(2*i + 1);
     reverseSortOrder->setTag(i);
     
-    CCPoint topLeft = CCPoint{0, sortingButtonMenu->getContentHeight() - listItemSize.height*i};
-
-    moveUp->setPosition(topLeft + CCPoint{moveUp->getScaledContentSize().width/2, -listItemSize.height/2});
+    moveUp->setPosition(moveUp->getScaledContentSize().width/2, listItemSize.height/2);
     moveDown->setPosition(moveUp->getPosition() + CCPoint{moveUp->getScaledContentSize().width/2 + menuGap + moveDown->getScaledContentSize().width/2, 0});
     reverseSortOrder->setPosition(moveDown->getPosition() + CCPoint{moveDown->getScaledContentSize().width/2 + menuGap + reverseSortOrder->getScaledContentSize().width/2, 0});
 
@@ -177,29 +170,37 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
       menuWidth += reverseSortOrder->getScaledContentSize().width;
       menuWidth += 2*menuGap;
     }
+    listItemMenus[i]->setContentWidth(menuWidth);
+    listItemMenus[i]->setContentHeight(listItemSize.height);
 
-    sortingButtonMenu->addChild(moveUp);
-    sortingButtonMenu->addChild(moveDown);
-    sortingButtonMenu->addChild(reverseSortOrder);
+    listItemMenus[i]->addChild(moveUp);
+    listItemMenus[i]->addChild(moveDown);
+    listItemMenus[i]->addChild(reverseSortOrder);
   }
 
-  sortingButtonMenu->setContentWidth(menuWidth);
   listItemSize.width += menuWidth;
-  sortingList->setContentWidth(listItemSize.width);
-
-  sortingList->setScale(contentSize.width/listItemSize.width);
+  m_sortingList->setContentWidth(listItemSize.width);
+  m_sortingList->setScale(contentSize.width/listItemSize.width);
 
 
   for (int i = 0; i < SORT_TYPE_COUNT; i++) {
-    listItemBackgrounds[i] = CCLayerColor::create({0, 0, 0, 0}, listItemSize.width, listItemSize.height);
-    CCPoint bottomLeft = CCPoint{0, sortingList->getContentHeight() - pad - textHeight - pad};
+    CCPoint bottomLeft = CCPoint{0, m_sortingList->getContentHeight() - pad - textHeight - pad};
+
+    listItemSortLabels[i]->limitLabelWidth(sortLabelWidth * 0.9f, 1, 0);
+
+    listItemBackgrounds[i] = CCLayerColor::create({0, 0, 0, (GLubyte) (ODD_BACKGROUND_OPACITY * (i & 1) + EVEN_BACKGROUND_OPACITY * !(i & 1))}, listItemSize.width, listItemSize.height);
     listItemBackgrounds[i]->setPosition(bottomLeft - CCPoint{0, listItemSize.height}*i);
+
+    listItemForegrounds[i] = CCLayerColor::create({0, 0, 0, 0}, listItemSize.width, listItemSize.height);
+    listItemForegrounds[i]->setPosition(bottomLeft - CCPoint{0, listItemSize.height}*i);
   }
   
   for (int i = 0; i < SORT_TYPE_COUNT; i++) {
-    sortingList->addChild(listItemBackgrounds[i]);
-    sortingList->addChild(numbers[i]);
-    sortingList->addChild(sortLabels[i]);
+    m_sortingList->addChild(listItemBackgrounds[i]); // 5n + 0
+    m_sortingList->addChild(listItemNumbers[i]);     // 5n + 1
+    m_sortingList->addChild(listItemSortLabels[i]);  // 5n + 2
+    m_sortingList->addChild(listItemMenus[i]);       // 5n + 3
+    m_sortingList->addChild(listItemForegrounds[i]); // 5n + 4
   }
   
   recalculateListItemBackgrounds();
@@ -207,18 +208,16 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
   auto separator = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
   auto separator2 = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
   separator->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - title_margin);
-  separator2->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - title_margin - sortingList->getScaledContentSize().height - separator_height);
+  separator2->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - title_margin - m_sortingList->getScaledContentSize().height - separator_height);
 
   m_mainLayer->addChild(separator);
-  m_mainLayer->addChild(sortingList);
+  m_mainLayer->addChild(m_sortingList);
   m_mainLayer->addChild(separator2);
 
-  sortingList->addChild(sortingButtonMenu);
-
   CCMenu *togglerMenu = CCMenu::create();
-  togglerMenu->setContentSize(contentSize - CCPoint{0, sortingList->getScaledContentSize().height + separator_height});
-  togglerMenu->setPosition(separator2->getPosition() - CCPoint{-separator2->getContentWidth()/2, -separator_height/2 + togglerMenu->getContentHeight()/2});
-  togglerMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Center));
+  togglerMenu->setContentSize(contentSize - CCPoint{0, m_sortingList->getScaledContentSize().height + separator_height});
+  togglerMenu->setPosition(separator2->getPosition() - CCPoint{-separator2->getContentWidth()/2, togglerMenu->getContentHeight()/2});
+  togglerMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Start));
 
   auto strictCategoryToggler = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(SortPopup::onToggle), 0.6f);
   strictCategoryToggler->setTag(0);
@@ -227,10 +226,19 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
 
   strictCategoryToggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
   strictCategoryLabel->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale(0.375f));
-
+  
+  CCNode* spacer = CCNode::create();
+  spacer->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false)->setNextGap(0));
+  
+  togglerMenu->addChild(spacer);
   togglerMenu->addChild(strictCategoryToggler);
   togglerMenu->addChild(strictCategoryLabel);
+
   togglerMenu->updateLayout();
+  float delta = contentSize.height - m_sortingList->getScaledContentSize().height - separator_height - togglerMenu->getScaledContentSize().height;
+  spacer->setContentWidth(delta/2);
+  togglerMenu->updateLayout();
+
   CCMenu *infoMenu = CCMenu::create();
   infoMenu->setContentSize(m_size);
   infoMenu->setPosition(0, 0);
@@ -238,7 +246,7 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
     "Sort",
 
     "Customize the sorting order of the icons. Sorting methods that come first in the list get applied first.\n"
-    "If a sorting method won't get utilized, its background will become <cr>red</c>.\n"
+    "If a sorting method doesn't get used, it will be blacked out.\n"
     "The <co>flip</c> toggle reverses a sorting method's sorting order.\n"
     "<cy>Strict Category</c> - <cb>Category</c> additionally sorts icons inside categories by progression\n",
 
@@ -251,7 +259,7 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
   m_mainLayer->addChild(infoMenu);
 
   LinkedCCMenu *linkedMenu = LinkedCCMenu::createLinked(m_mainLayer);
-  linkedMenu->linkChildren(sortingList);
+  linkedMenu->linkChildren(m_sortingList);
   m_mainLayer->addChild(linkedMenu);
 
   return true;

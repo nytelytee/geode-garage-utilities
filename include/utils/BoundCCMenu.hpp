@@ -18,7 +18,7 @@ public:
   void setBound(CCRect newBound) { m_bound = newBound; }
 
   static BoundCCMenu *create(CCRect worldSpaceBound) {
-  	auto a = new BoundCCMenu();
+    auto a = new BoundCCMenu();
     if (a && a->initWithRect(worldSpaceBound)){ a->autorelease(); return a; }
     CC_SAFE_DELETE(a);
     return nullptr;

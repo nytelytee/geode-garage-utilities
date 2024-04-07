@@ -3,7 +3,7 @@
 #include <cocos2d.h>
 
 namespace cocos2d::extension {
-    class CCScale9Sprite;
+  class CCScale9Sprite;
 }
 
 class IconButtonSpriteNoText : public cocos2d::CCSprite {
