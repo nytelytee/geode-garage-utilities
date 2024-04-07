@@ -21,7 +21,7 @@ void FilterPopup::postCustomSetup() {
   m_scrollLayer->m_contentLayer->setContentSize(m_buttonMenu->getContentSize());
   m_scrollLayer->m_contentLayer->addChild(m_buttonMenu);
   m_mainLayer->addChild(m_scrollLayer);
-  m_mainLayer->addChild(m_topButtonMenu);
+  m_mainLayer->addChild(m_actionButtonMenu);
   m_scrollLayer->moveToTop();
   
   linkedMenu->linkChildren(m_mainLayer);
@@ -47,10 +47,10 @@ void FilterPopup::preCustomSetup() {
   float delta = 20;
   m_scrollLayerSize = usableSize - CCPoint{delta, delta};
   
-  m_topButtonMenu = CCMenu::create();
-  m_topButtonMenu->setAnchorPoint({0, 0});
-  m_topButtonMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Even));
-  m_topButtonMenu->setContentSize({usableSize.width, 0});
+  m_actionButtonMenu = CCMenu::create();
+  m_actionButtonMenu->setAnchorPoint({0, 0});
+  m_actionButtonMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Even));
+  m_actionButtonMenu->setContentSize({usableSize.width, 0});
 
   ButtonSprite *topMenuAllButtonSprite = ButtonSprite::create("All", "goldFont.fnt", "GJ_button_01.png", 1);
   ButtonSprite *topMenuNoneButtonSprite = ButtonSprite::create("None", "goldFont.fnt", "GJ_button_06.png", 1);
@@ -68,15 +68,15 @@ void FilterPopup::preCustomSetup() {
   topMenuNoneButton->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale((delta - separatorHeight - BOTTOM_BORDER_SIZE)/topMenuNoneButton->getContentHeight()));
   topMenuInvertButton->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale((delta - separatorHeight - BOTTOM_BORDER_SIZE)/topMenuInvertButton->getContentHeight()));
   
-  m_topButtonMenu->addChild(topMenuAllButton);
-  m_topButtonMenu->addChild(topMenuNoneButton);
-  m_topButtonMenu->addChild(topMenuInvertButton);
+  m_actionButtonMenu->addChild(topMenuAllButton);
+  m_actionButtonMenu->addChild(topMenuNoneButton);
+  m_actionButtonMenu->addChild(topMenuInvertButton);
 
-  m_topButtonMenu->updateLayout();
+  m_actionButtonMenu->updateLayout();
   // offset necessary to place it in the center of the remaining space at the bottom
-  float m_topButtonMenuOffset = ((delta - separatorHeight) - m_topButtonMenu->getContentHeight())/2;
+  float m_actionButtonMenuOffset = ((delta - separatorHeight) - m_actionButtonMenu->getContentHeight())/2;
 
-  m_topButtonMenu->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - titleMargin - m_scrollLayerSize.height - delta + BOTTOM_BORDER_SIZE - m_topButtonMenuOffset);
+  m_actionButtonMenu->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - titleMargin - m_scrollLayerSize.height - delta + BOTTOM_BORDER_SIZE - m_actionButtonMenuOffset);
   separatorTop->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - titleMargin);
   separatorBottom->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - titleMargin - m_scrollLayerSize.height - separatorHeight);
   

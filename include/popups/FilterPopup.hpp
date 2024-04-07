@@ -10,7 +10,7 @@ using namespace geode::prelude;
 class FilterPopup : public Popup<FilterAndSortPopup *> {
 protected:
 
-  CCMenu *m_topButtonMenu;
+  CCMenu *m_actionButtonMenu;
   BoundCCMenu *m_buttonMenu;
   ScrollLayer *m_scrollLayer;
   CCSize m_scrollLayerSize;
