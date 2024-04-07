@@ -80,9 +80,9 @@ void SortPopup::onReverseSortOrder(CCObject *sender) {
   int listItem = item->getTag();
   iconKitState.pendingSettings.sortIsReverse[listItem] = !iconKitState.pendingSettings.sortIsReverse[listItem];
   if (iconKitState.pendingSettings.sortIsReverse[listItem])
-    getChild<IconButtonSpriteNoText>(item, 0)->setBG("GJ_button_06.png", false);
-  else
     getChild<IconButtonSpriteNoText>(item, 0)->setBG("GJ_button_01.png", false);
+  else
+    getChild<IconButtonSpriteNoText>(item, 0)->setBG("GJ_button_04.png", false);
 }
 
 bool SortPopup::setup(FilterAndSortPopup *parent) {
@@ -145,7 +145,7 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
 
     CCSprite *reverseSortOrderSprite = CCSprite::createWithSpriteFrameName("GJ_sortIcon_001.png");
     reverseSortOrderSprite->setRotation(90);
-    const char* bgname = iconKitState.pendingSettings.sortIsReverse[i] ? "GJ_button_06.png" : "GJ_button_01.png";
+    const char* bgname = iconKitState.pendingSettings.sortIsReverse[i] ? "GJ_button_01.png" : "GJ_button_04.png";
     IconButtonSpriteNoText *reverseSortOrderButtonSprite = IconButtonSpriteNoText::create(bgname, reverseSortOrderSprite);
     
     moveUpButtonSprite->setScale((listItemSize.height - 2*pad) / moveUpButtonSprite->getScaledContentSize().height);
