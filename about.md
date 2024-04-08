@@ -29,7 +29,7 @@ Filter Popup:
 ![Example Image: Filter Popup](nytelyte.garage_utilities/filter.png)
 
 Sort Popup:
-![Example Image: Sort Popup](nytelyte.garage_utilities/filter.png)
+![Example Image: Sort Popup](nytelyte.garage_utilities/sort.png)
 
 Example of filtered icons:
 ![Example Image: Filtered Icons (accepted page)](nytelyte.garage_utilities/filter-example-accepted.png)
