@@ -47,7 +47,7 @@ void FilterAndSortPopup::onActionButton(CCObject *sender) {
     iconKitState.overridePageForIcon[iconType] = true;
   }
   if (SHOULD_CHANGE_ICON_TYPE(iconKitState.selectedIconType))
-    getChild<GJGarageLayer>(CCScene::get(), 0)->setupPage(-1, iconKitState.selectedIconType);
+    getChildOfType<GJGarageLayer>(CCScene::get(), 0)->setupPage(-1, iconKitState.selectedIconType);
   Mod::get()->setSavedValue<IconKitSettings>("iconKitSettings", iconKitState.settings);
   Popup<>::onClose(sender);
 }

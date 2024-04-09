@@ -129,7 +129,6 @@ struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
     iconKitState.overridePageForIcon[iconType] = false;
 
     int activeIconPosition = gm->activeIconForType(iconType);
-    log::info("{}", activeIconPosition);
     // active icon has been filtered out
     if (!activeIconPosition && page == -1) page = 0;
     page = page == -1 ? (activeIconPosition - 1)/36 : page;
