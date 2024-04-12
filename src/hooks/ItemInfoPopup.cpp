@@ -23,119 +23,42 @@ Type* getChildOfTypeFixed(CCNode* node, int index) {
   return nullptr;
 }
 
-
 using namespace geode::prelude;
 
+enum ItemInfoPopupButtonAction { Previous, Next };
+
 struct HookedItemInfoPopup : Modify<HookedItemInfoPopup, ItemInfoPopup> {
+
   bool init(int icon, UnlockType unlockType) {
     if (!ItemInfoPopup::init(icon, unlockType)) return false;
-    CCLayer *layer = getChild<CCLayer>(this, 0);
-    if (!Mod::get()->getSettingValue<bool>("disable-unlock-popup-animation-name-changes"))
+    if (!Mod::get()->getSettingValue<bool>("disable-item-info-popup-animation-name-changes"))
       if (unlockType == UnlockType::GJItem && m_itemID >= 18 && m_itemID <= 20) {
-        CCLabelBMFont *title = getChildOfType<CCLabelBMFont>(layer, 0);
-        TextArea *description = getChildOfType<TextArea>(layer, 0);
+        CCLabelBMFont *title = getChildOfType<CCLabelBMFont>(m_mainLayer, 0);
+        TextArea *description = getChildOfType<TextArea>(m_mainLayer, 0);
         title->setString(fmt::format("Animation {}", m_itemID - 17).c_str());
         description->setString("You can <cl>buy</c> this <cg>Animation</c> at the <cp>Mechanic</c>!");
       }
-    if (Mod::get()->getSettingValue<bool>("disable-unlock-popup-arrows")) return true;
-    CCMenu *menu = getChildOfType<CCMenu>(layer, 0);
+    if (Mod::get()->getSettingValue<bool>("disable-item-info-popup-arrows")) return true;
     CCSprite *prevSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
     CCSprite *nextSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
     nextSprite->setFlipX(true);
-    CCMenuItemSpriteExtra *prev = CCMenuItemSpriteExtra::create(prevSprite, this, menu_selector(HookedItemInfoPopup::onPrev));
-    CCMenuItemSpriteExtra *next = CCMenuItemSpriteExtra::create(nextSprite, this, menu_selector(HookedItemInfoPopup::onNext));
-    prev->setPosition({-175, 75});
-    next->setPosition({175, 75});
-    menu->addChild(prev);
-    menu->addChild(next);
+    CCMenuItemSpriteExtra *prev = CCMenuItemSpriteExtra::create(prevSprite, this, menu_selector(HookedItemInfoPopup::onPrevNext));
+    CCMenuItemSpriteExtra *next = CCMenuItemSpriteExtra::create(nextSprite, this, menu_selector(HookedItemInfoPopup::onPrevNext));
+    prev->setTag(ItemInfoPopupButtonAction::Previous);
+    next->setTag(ItemInfoPopupButtonAction::Next);
+    CCSize size = getChildOfType<CCScale9Sprite>(m_mainLayer, 0)->getContentSize();
+    float pad = 25;
+    float yOffset = 90;  // robtop moved the entire menu instead of just the ok button i think
+    prev->setPosition({-size.width/2 - pad, yOffset});
+    next->setPosition({size.width/2 + pad, yOffset});
+    m_buttonMenu->addChild(prev);
+    m_buttonMenu->addChild(next);
     return true;
   }
-  void onPrev(CCObject *) {
-    
-    int previousItemID = m_itemID - 1;
-    std::vector<unsigned>::iterator p_acceptedFirst;
-    std::vector<unsigned>::iterator p_deniedFirst;
-    std::vector<unsigned>::iterator p_acceptedLast;
-    std::vector<unsigned>::iterator p_deniedLast;
-    std::vector<unsigned>::iterator p_accepted;
-    std::vector<unsigned>::iterator p_denied;
-    bool isAcceptedEmpty;
-    bool isDeniedEmpty;
-    
-    GJGarageLayer *garage = getChildOfTypeFixed<GJGarageLayer>(CCScene::get(), 0);
-    ShardsPage *shards = nullptr;
-    if (garage) shards = getChildOfTypeFixed<ShardsPage>(garage, -1);
-    GJPathPage *pathPage = getChildOfTypeFixed<GJPathPage>(CCScene::get(), -1);
-    GJPathSprite *pathSprite = nullptr;
-    if (pathPage) pathSprite = getChildOfTypeFixed<GJPathSprite>(pathPage->m_mainLayer, -1);
-    
-    if (pathSprite) {
-      PathType path = static_cast<PathType>(pathSprite->m_pathNumber);
-      std::pair<unsigned, UnlockType> previousPathIcon;
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_pathFirst = PATHS_UNLOCK_ORDER[path].begin();
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_pathLast = PATHS_UNLOCK_ORDER[path].end() - 1;
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_path = std::find(p_pathFirst, p_pathLast + 1, std::pair<unsigned, UnlockType>{m_itemID, m_unlockType});
-      if (p_path != p_pathFirst) previousPathIcon = *(p_path-1);
-      if (p_path == p_pathFirst) previousPathIcon = *p_pathLast;
-      getChild<CCLayer>(this, 0)->removeFromParent();
-      ItemInfoPopup::init(previousPathIcon.first, previousPathIcon.second);
-      return;
-    }
-    
-    if (shards) {
-      std::pair<unsigned, UnlockType> previousShardIcon;
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_shardFirst = SHARDS_OF_POWER_UNLOCK_ORDER.begin();
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_shardLast = SHARDS_OF_POWER_UNLOCK_ORDER.end() - 1;
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_shard = std::find(p_shardFirst, p_shardLast + 1, std::pair<unsigned, UnlockType>{m_itemID, m_unlockType});
-      if (p_shard != p_shardFirst) previousShardIcon = *(p_shard-1);
-      if (p_shard == p_shardFirst) previousShardIcon = *p_shardLast;
-      getChild<CCLayer>(this, 0)->removeFromParent();
-      ItemInfoPopup::init(previousShardIcon.first, previousShardIcon.second);
-      return;
-    }
 
-    if (SHOULD_CHANGE_UNLOCK_TYPE(m_unlockType)) {
-      p_acceptedFirst = iconKitState.acceptedIcons[m_unlockType].begin();
-      p_deniedFirst = iconKitState.deniedIcons[m_unlockType].begin();
-      p_acceptedLast = iconKitState.acceptedIcons[m_unlockType].end() - 1;
-      p_deniedLast = iconKitState.deniedIcons[m_unlockType].end() - 1;
-      isAcceptedEmpty = p_acceptedFirst == p_acceptedLast + 1;
-      isDeniedEmpty = p_deniedFirst == p_deniedLast + 1;
-      p_accepted = std::find(p_acceptedFirst, p_acceptedLast+1, m_itemID);
-      p_denied = std::find(p_deniedFirst, p_deniedLast+1, m_itemID);
-    } else {
-      p_acceptedFirst = SPECIAL_UNLOCK_ORDER[m_unlockType].begin();
-      p_acceptedLast = SPECIAL_UNLOCK_ORDER[m_unlockType].end() - 1;
-      p_accepted = std::find(p_acceptedFirst, p_acceptedLast+1, m_itemID);
-      isDeniedEmpty = true;
-      isAcceptedEmpty = false;
-    }
-    
-    if (p_accepted <= p_acceptedLast) {
-      if (p_accepted != p_acceptedFirst) previousItemID = *(p_accepted-1);
-      if (p_accepted == p_acceptedFirst && (!iconKitState.settings.showDenied || isDeniedEmpty)) previousItemID = *p_acceptedLast;
-      if (p_accepted == p_acceptedFirst && iconKitState.settings.showDenied && !isDeniedEmpty) previousItemID = *p_deniedLast;
-    } else {
-      if (p_denied != p_deniedFirst) previousItemID = *(p_denied-1);
-      if (p_denied == p_deniedFirst && isAcceptedEmpty) previousItemID = *p_deniedLast;
-      if (p_denied == p_deniedFirst && !isAcceptedEmpty) previousItemID = *p_acceptedLast;
-    }
-
-    getChild<CCLayer>(this, 0)->removeFromParent();
-    ItemInfoPopup::init(previousItemID, m_unlockType);
-  }
-  void onNext(CCObject *) {
-    
-    int nextItemID = m_itemID + 1;
-    std::vector<unsigned>::iterator p_acceptedFirst;
-    std::vector<unsigned>::iterator p_deniedFirst;
-    std::vector<unsigned>::iterator p_acceptedLast;
-    std::vector<unsigned>::iterator p_deniedLast;
-    std::vector<unsigned>::iterator p_accepted;
-    std::vector<unsigned>::iterator p_denied;
-    bool isAcceptedEmpty;
-    bool isDeniedEmpty;
-
+  void onPrevNext(CCObject *sender) {
+    CCMenuItemSpriteExtra* button = static_cast<CCMenuItemSpriteExtra*>(sender);
+    ItemInfoPopupButtonAction action = static_cast<ItemInfoPopupButtonAction>(button->getTag());
 
     GJGarageLayer *garage = getChildOfTypeFixed<GJGarageLayer>(CCScene::get(), 0);
     ShardsPage *shards = nullptr;
@@ -143,60 +66,92 @@ struct HookedItemInfoPopup : Modify<HookedItemInfoPopup, ItemInfoPopup> {
     GJPathPage *pathPage = getChildOfTypeFixed<GJPathPage>(CCScene::get(), -1);
     GJPathSprite *pathSprite = nullptr;
     if (pathPage) pathSprite = getChildOfTypeFixed<GJPathSprite>(pathPage->m_mainLayer, -1);
+    ProfilePage* profilePage = getChildOfTypeFixed<ProfilePage>(CCScene::get(), -1);
     
-    if (pathSprite) {
+    std::vector<std::pair<unsigned, UnlockType>>* earlyIcons = nullptr;
+    std::vector<std::pair<unsigned, UnlockType>> playerIcons;
+    std::vector<std::pair<unsigned, UnlockType>> specialIcons;
+
+    if (profilePage) {
+      playerIcons.push_back({profilePage->m_score->m_playerCube,   UnlockType::Cube});
+      playerIcons.push_back({profilePage->m_score->m_playerShip,   UnlockType::Ship});
+      playerIcons.push_back({profilePage->m_score->m_playerBall,   UnlockType::Ball});
+      playerIcons.push_back({profilePage->m_score->m_playerUfo,    UnlockType::Bird});
+      playerIcons.push_back({profilePage->m_score->m_playerWave,   UnlockType::Dart});
+      playerIcons.push_back({profilePage->m_score->m_playerRobot,  UnlockType::Robot});
+      playerIcons.push_back({profilePage->m_score->m_playerSpider, UnlockType::Spider});
+      playerIcons.push_back({profilePage->m_score->m_playerSwing,  UnlockType::Swing});
+      CCMenu *playerMenu = static_cast<CCMenu*>(profilePage->m_mainLayer->getChildByID("player-menu"));
+      if (playerMenu && playerMenu->getChildByID("player-jetpack"))
+        playerIcons.push_back({profilePage->m_score->m_playerJetpack, UnlockType::Jetpack});
+      if (playerMenu && playerMenu->getChildByID("player-deathEffect"))
+        playerIcons.push_back({profilePage->m_score->m_playerExplosion, UnlockType::Death});
+      earlyIcons = &playerIcons;
+    } else if (pathSprite) {
       PathType path = static_cast<PathType>(pathSprite->m_pathNumber);
-      std::pair<unsigned, UnlockType> nextPathIcon;
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_pathFirst = PATHS_UNLOCK_ORDER[path].begin();
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_pathLast = PATHS_UNLOCK_ORDER[path].end() - 1;
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_path = std::find(p_pathFirst, p_pathLast + 1, std::pair<unsigned, UnlockType>{m_itemID, m_unlockType});
-      if (p_path != p_pathLast) nextPathIcon = *(p_path+1);
-      if (p_path == p_pathLast) nextPathIcon = *p_pathFirst;
-      getChild<CCLayer>(this, 0)->removeFromParent();
-      ItemInfoPopup::init(nextPathIcon.first, nextPathIcon.second);
-      return;
+      earlyIcons = &PATHS_UNLOCK_ORDER[path];
+    } else if (shards) {
+      earlyIcons = &SHARDS_OF_POWER_UNLOCK_ORDER;
+    } else if (!SHOULD_CHANGE_UNLOCK_TYPE(m_unlockType)) {
+      // lmao probably should have thought about this before
+      for (unsigned icon : SPECIAL_UNLOCK_ORDER[m_unlockType]) specialIcons.push_back({icon, m_unlockType});
+      earlyIcons = &specialIcons;
     }
 
-    if (shards) {
-      std::pair<unsigned, UnlockType> nextShardIcon;
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_shardFirst = SHARDS_OF_POWER_UNLOCK_ORDER.begin();
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_shardLast = SHARDS_OF_POWER_UNLOCK_ORDER.end() - 1;
-      std::vector<std::pair<unsigned, UnlockType>>::iterator p_shard = std::find(p_shardFirst, p_shardLast + 1, std::pair<unsigned, UnlockType>{m_itemID, m_unlockType});
-      if (p_shard != p_shardLast) nextShardIcon = *(p_shard+1);
-      if (p_shard == p_shardLast) nextShardIcon = *p_shardFirst;
-      getChild<CCLayer>(this, 0)->removeFromParent();
-      ItemInfoPopup::init(nextShardIcon.first, nextShardIcon.second);
+    if (earlyIcons) {
+      std::pair<unsigned, UnlockType> newIcon;
+      std::vector<std::pair<unsigned, UnlockType>>::iterator p_first = earlyIcons->begin();
+      std::vector<std::pair<unsigned, UnlockType>>::iterator p_last = earlyIcons->end() - 1;
+      std::vector<std::pair<unsigned, UnlockType>>::iterator p_current = std::find(p_first, p_last + 1, std::pair<unsigned, UnlockType>{m_itemID, m_unlockType});
+      if (action == ItemInfoPopupButtonAction::Next) {
+        if (p_current != p_last) newIcon = *(p_current+1);
+        if (p_current == p_last) newIcon = *p_first;
+      } else {
+        if (p_current != p_first) newIcon = *(p_current-1);
+        if (p_current == p_first) newIcon = *p_last;
+      }
+      m_buttonMenu->removeAllChildren();
+      m_mainLayer->removeAllChildren();
+      m_mainLayer->removeFromParent();
+      ItemInfoPopup::init(newIcon.first, newIcon.second);
       return;
-    }
-
-    if (SHOULD_CHANGE_UNLOCK_TYPE(m_unlockType)) {
-      p_acceptedFirst = iconKitState.acceptedIcons[m_unlockType].begin();
-      p_deniedFirst = iconKitState.deniedIcons[m_unlockType].begin();
-      p_acceptedLast = iconKitState.acceptedIcons[m_unlockType].end() - 1;
-      p_deniedLast = iconKitState.deniedIcons[m_unlockType].end() - 1;
-      p_accepted = std::find(p_acceptedFirst, p_acceptedLast+1, m_itemID);
-      p_denied = std::find(p_deniedFirst, p_deniedLast+1, m_itemID);
-      isAcceptedEmpty = p_acceptedFirst == p_acceptedLast + 1;
-      isDeniedEmpty = p_deniedFirst == p_deniedLast + 1;
-    } else {
-      p_acceptedFirst = SPECIAL_UNLOCK_ORDER[m_unlockType].begin();
-      p_acceptedLast = SPECIAL_UNLOCK_ORDER[m_unlockType].end() - 1;
-      p_accepted = std::find(p_acceptedFirst, p_acceptedLast+1, m_itemID);
-      isDeniedEmpty = true;
-      isAcceptedEmpty = false;
     }
     
-    if (p_accepted <= p_acceptedLast) {
-      if (p_accepted != p_acceptedLast) nextItemID = *(p_accepted+1);
-      if (p_accepted == p_acceptedLast && (!iconKitState.settings.showDenied || isDeniedEmpty)) nextItemID = *p_acceptedFirst;
-      if (p_accepted == p_acceptedLast && iconKitState.settings.showDenied && !isDeniedEmpty) nextItemID = *p_deniedFirst;
-    } else {
-      if (p_denied != p_deniedLast) nextItemID = *(p_denied+1);
-      if (p_denied == p_deniedLast && isAcceptedEmpty) nextItemID = *p_deniedFirst;
-      if (p_denied == p_deniedLast && !isAcceptedEmpty) nextItemID = *p_acceptedFirst;
-    }
+    int newItemID = m_itemID;
+    std::vector<unsigned>::iterator p_acceptedFirst = iconKitState.acceptedIcons[m_unlockType].begin();
+    std::vector<unsigned>::iterator p_deniedFirst = iconKitState.deniedIcons[m_unlockType].begin();
+    std::vector<unsigned>::iterator p_acceptedLast = iconKitState.acceptedIcons[m_unlockType].end() - 1;
+    std::vector<unsigned>::iterator p_deniedLast = iconKitState.deniedIcons[m_unlockType].end() - 1;
+    std::vector<unsigned>::iterator p_acceptedCurrent = std::find(p_acceptedFirst, p_acceptedLast+1, m_itemID);
+    std::vector<unsigned>::iterator p_deniedCurrent = std::find(p_deniedFirst, p_deniedLast+1, m_itemID);
+    bool isAcceptedEmpty = p_acceptedFirst == p_acceptedLast + 1;
+    bool isDeniedEmpty = p_deniedFirst == p_deniedLast + 1;
 
-    getChild<CCLayer>(this, 0)->removeFromParent();
-    ItemInfoPopup::init(nextItemID, m_unlockType);
+    if (action == ItemInfoPopupButtonAction::Next) {
+      if (p_acceptedCurrent <= p_acceptedLast) {
+        if (p_acceptedCurrent != p_acceptedLast) newItemID = *(p_acceptedCurrent+1);
+        if (p_acceptedCurrent == p_acceptedLast && (!iconKitState.settings.showDenied || isDeniedEmpty)) newItemID = *p_acceptedFirst;
+        if (p_acceptedCurrent == p_acceptedLast && iconKitState.settings.showDenied && !isDeniedEmpty) newItemID = *p_deniedFirst;
+      } else {
+        if (p_deniedCurrent != p_deniedLast) newItemID = *(p_deniedCurrent+1);
+        if (p_deniedCurrent == p_deniedLast && isAcceptedEmpty) newItemID = *p_deniedFirst;
+        if (p_deniedCurrent == p_deniedLast && !isAcceptedEmpty) newItemID = *p_acceptedFirst;
+      }
+    } else {
+      if (p_acceptedCurrent <= p_acceptedLast) {
+        if (p_acceptedCurrent != p_acceptedFirst) newItemID = *(p_acceptedCurrent-1);
+        if (p_acceptedCurrent == p_acceptedFirst && (!iconKitState.settings.showDenied || isDeniedEmpty)) newItemID = *p_acceptedLast;
+        if (p_acceptedCurrent == p_acceptedFirst && iconKitState.settings.showDenied && !isDeniedEmpty) newItemID = *p_deniedLast;
+      } else {
+        if (p_deniedCurrent != p_deniedFirst) newItemID = *(p_deniedCurrent-1);
+        if (p_deniedCurrent == p_deniedFirst && isAcceptedEmpty) newItemID = *p_deniedLast;
+        if (p_deniedCurrent == p_deniedFirst && !isAcceptedEmpty) newItemID = *p_acceptedLast;
+      }
+    }
+    
+    m_buttonMenu->removeAllChildren();
+    m_mainLayer->removeAllChildren();
+    m_mainLayer->removeFromParent();
+    ItemInfoPopup::init(newItemID, m_unlockType);
   }
 };
