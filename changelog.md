@@ -1,3 +1,7 @@
+# v1.0.4
+- added support for colors in the item info popup on profile pages
+- reordered gauntlets for strict category to match newly added ones
+
 # v1.0.3
 
 - added support for item info popup arrows on profile pages, for people with Better Unlock Info

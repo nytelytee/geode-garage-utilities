@@ -419,10 +419,10 @@ this file was handmade
   #Gauntlets:
     accessible
     15 gauntlets: 74
+    fantasy: 90
     inaccessible
     temple: 49
     christmas: 63
-    fantasy: 90
     potion: 94
 
   #List Rewards: 89
@@ -563,7 +563,6 @@ this file was handmade
   #Gauntlets:
     accessible
     portal: 16
-    inacessible
     strange: 31
   #Daily Levels: 22
   #List Rewards: 39

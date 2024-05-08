@@ -1,7 +1,7 @@
 {
-  "geode": "2.0.0-beta.23",
+  "geode": "2.0.0-beta.25",
   "gd": {"android": "2.205", "win": "2.204"},
-  "version": "v1.0.3",
+  "version": "v1.0.4",
   "id": "nytelyte.garage_utilities",
   "name": "Garage Utilities",
   "developer": "NyteLyte",

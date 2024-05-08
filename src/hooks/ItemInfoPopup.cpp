@@ -72,7 +72,7 @@ struct HookedItemInfoPopup : Modify<HookedItemInfoPopup, ItemInfoPopup> {
     std::vector<std::pair<unsigned, UnlockType>> playerIcons;
     std::vector<std::pair<unsigned, UnlockType>> specialIcons;
 
-    if (profilePage) {
+    if (profilePage && m_unlockType != UnlockType::Col1 && m_unlockType != UnlockType::Col2) {
       playerIcons.push_back({profilePage->m_score->m_playerCube,   UnlockType::Cube});
       playerIcons.push_back({profilePage->m_score->m_playerShip,   UnlockType::Ship});
       playerIcons.push_back({profilePage->m_score->m_playerBall,   UnlockType::Ball});
@@ -86,6 +86,12 @@ struct HookedItemInfoPopup : Modify<HookedItemInfoPopup, ItemInfoPopup> {
         playerIcons.push_back({profilePage->m_score->m_playerJetpack, UnlockType::Jetpack});
       if (playerMenu && playerMenu->getChildByID("player-deathEffect"))
         playerIcons.push_back({profilePage->m_score->m_playerExplosion, UnlockType::Death});
+      earlyIcons = &playerIcons;
+    } else if (profilePage) {
+      playerIcons.push_back({profilePage->m_score->m_color1,   UnlockType::Col1});
+      playerIcons.push_back({profilePage->m_score->m_color2,   UnlockType::Col2});
+      if (profilePage->m_score->m_glowEnabled)
+        playerIcons.push_back({profilePage->m_score->m_color3,   UnlockType::Col2});
       earlyIcons = &playerIcons;
     } else if (pathSprite) {
       PathType path = static_cast<PathType>(pathSprite->m_pathNumber);
