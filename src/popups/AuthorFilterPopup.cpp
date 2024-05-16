@@ -5,6 +5,7 @@
 #include <iconkit.hpp>
 #include <popups/FilterPopup.hpp>
 #include <popups/AuthorFilterPopup.hpp>
+#include <utils/CCMenuItemTogglerSpoof.hpp>
 
 
 using namespace geode::prelude;
@@ -32,7 +33,7 @@ void AuthorFilterPopup::goToAuthorProfile(CCObject *sender) {
 
 void AuthorFilterPopup::addAuthor(int tag, int accountID) {
 
-  CCMenuItemToggler *toggler = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(AuthorFilterPopup::toggleAuthor), 1.f);
+  CCMenuItemToggler *toggler = createTogglerWithStandardSpritesSpoofOn(this, menu_selector(AuthorFilterPopup::toggleAuthor));
   toggler->setTag(tag);
   toggler->setScale(0.6f);
   toggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
@@ -42,7 +43,7 @@ void AuthorFilterPopup::addAuthor(int tag, int accountID) {
   gd::string username = !accountID ? "RobTop" : GameStatsManager::sharedState()->usernameForAccountID(accountID);
   const char* font = accountID ? "goldFont.fnt" : "bigFont.fnt";
   ccColor3B color = accountID < 0 ? ccColor3B{90, 255, 255} : ccColor3B{255, 255, 255};
-  auto label = CCLabelBMFont::create(username.c_str(), font);
+  CCLabelBMFont* label = CCLabelBMFont::create(username.c_str(), font);
 
   label->setColor(color);
 
@@ -61,7 +62,7 @@ void AuthorFilterPopup::addAuthor(int tag, int accountID) {
     AxisLayoutOptions::create()->
     setBreakLine(next_author_even)->
     setSameLine(next_author_even)->
-    setMaxScale(maxScale)
+    setScaleLimits({}, maxScale)
   );
   toggler->toggle(iconKitState.pendingSettings.authors[accountID]);
 
@@ -80,9 +81,8 @@ void AuthorFilterPopup::customSetup() {
   m_buttonMenu->updateLayout();
   
   for (size_t i = 0; i < m_buttonMenu->getChildrenCount()/2; i += 2) {
-    //CCMenuItemToggler *toggler = getChild<CCMenuItemToggler>(m_buttonMenu, 2*i);
     CCMenuItemSpriteExtra *label_button = getChild<CCMenuItemSpriteExtra>(m_buttonMenu, 2*i+1);
-    float gap = m_scrollLayerSize.width/2 - label_button->boundingBox().getMaxX();
+    float gap = m_buttonMenuSize.width/2 - label_button->boundingBox().getMaxX();
     label_button->setLayoutOptions(static_cast<AxisLayoutOptions *>(label_button->getLayoutOptions())->setNextGap(gap));
   }
 

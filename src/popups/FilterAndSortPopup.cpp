@@ -12,6 +12,7 @@
 #include <popups/OptionsPopup.hpp>
 
 #include <utils/LinkedCCMenu.hpp>
+#include <utils/CCMenuItemTogglerSpoof.hpp>
 
 using namespace geode::prelude;
 
@@ -123,7 +124,7 @@ bool FilterAndSortPopup::setup() {
   float title_margin = m_bgSprite->boundingBox().getMaxY() - m_title->boundingBox().getMaxY() - TOP_BORDER_SIZE;
   float delta = 20;
 
-  auto separator = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
+  CCLayerColor* separator = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
   separator->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - title_margin);
   m_mainLayer->addChild(separator);
 
@@ -131,41 +132,45 @@ bool FilterAndSortPopup::setup() {
   m_buttonMenu = CCMenu::create();
   m_buttonMenu->setLayout(RowLayout::create()->setGrowCrossAxis(true)->setAxisAlignment(AxisAlignment::Start)->setGap(layoutGap));
 
-  CCMenuItemToggler *lockedToggler = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(FilterAndSortPopup::onToggle), 0.6f);
+  CCMenuItemToggler *lockedToggler = createTogglerWithStandardSpritesSpoofOn(this, menu_selector(FilterAndSortPopup::onToggle));
+  lockedToggler->setScale(0.6f);
   lockedToggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
   CCLabelBMFont *lockedLabel = CCLabelBMFont::create("Locked", "bigFont.fnt");
-  lockedLabel->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale(0.375));
+  lockedLabel->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, 0.375));
   
-  CCMenuItemToggler *unlockedToggler = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(FilterAndSortPopup::onToggle), 0.6f);
+  CCMenuItemToggler *unlockedToggler = createTogglerWithStandardSpritesSpoofOn(this, menu_selector(FilterAndSortPopup::onToggle));
+  unlockedToggler->setScale(0.6f);
   unlockedToggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
   CCLabelBMFont *unlockedLabel = CCLabelBMFont::create("Unlocked", "bigFont.fnt");
-  unlockedLabel->setLayoutOptions(AxisLayoutOptions::create()->setSameLine(true)->setBreakLine(true)->setMaxScale(0.375f));
+  unlockedLabel->setLayoutOptions(AxisLayoutOptions::create()->setSameLine(true)->setBreakLine(true)->setScaleLimits({}, 0.375f));
 
-  CCMenuItemToggler *vanillaToggler = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(FilterAndSortPopup::onToggle), 0.6f);
+  CCMenuItemToggler *vanillaToggler = createTogglerWithStandardSpritesSpoofOn(this, menu_selector(FilterAndSortPopup::onToggle));
+  vanillaToggler->setScale(0.6f);
   vanillaToggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
   CCLabelBMFont *vanillaLabel = CCLabelBMFont::create("Vanilla", "bigFont.fnt");
-  vanillaLabel->setLayoutOptions(AxisLayoutOptions::create()->setSameLine(false)->setBreakLine(false)->setMaxScale(0.375f));
+  vanillaLabel->setLayoutOptions(AxisLayoutOptions::create()->setSameLine(false)->setBreakLine(false)->setScaleLimits({}, 0.375f));
 
-  CCMenuItemToggler *customToggler = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(FilterAndSortPopup::onToggle), 0.6f);
+  CCMenuItemToggler *customToggler = createTogglerWithStandardSpritesSpoofOn(this, menu_selector(FilterAndSortPopup::onToggle));
+  customToggler->setScale(0.6f);
   customToggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
   CCLabelBMFont *customLabel = CCLabelBMFont::create("Custom", "bigFont.fnt");
-  customLabel->setLayoutOptions(AxisLayoutOptions::create()->setSameLine(false)->setBreakLine(true)->setMaxScale(0.375f));
+  customLabel->setLayoutOptions(AxisLayoutOptions::create()->setSameLine(false)->setBreakLine(true)->setScaleLimits({}, 0.375f));
 
   ButtonSprite *authorSprite = ButtonSprite::create("Author");
   CCMenuItemSpriteExtra *author = CCMenuItemSpriteExtra::create(authorSprite, this, menu_selector(FilterAndSortPopup::onMenuButton));
-  author->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale(0.5f));
+  author->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, 0.5f));
 
   ButtonSprite *categorySprite = ButtonSprite::create("Category");
   CCMenuItemSpriteExtra *category = CCMenuItemSpriteExtra::create(categorySprite, this, menu_selector(FilterAndSortPopup::onMenuButton));
-  category->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale(0.5f));
+  category->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, 0.5f));
 
   ButtonSprite *sortSprite = ButtonSprite::create("Sort");
   CCMenuItemSpriteExtra *sort = CCMenuItemSpriteExtra::create(sortSprite, this, menu_selector(FilterAndSortPopup::onMenuButton));
-  sort->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale(0.5f));
+  sort->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, 0.5f));
 
   ButtonSprite *displaySettingsSprite = ButtonSprite::create("Display");
   CCMenuItemSpriteExtra *displaySettings = CCMenuItemSpriteExtra::create(displaySettingsSprite, this, menu_selector(FilterAndSortPopup::onMenuButton));
-  displaySettings->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale(0.5f));
+  displaySettings->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, 0.5f));
 
 
   lockedToggler->setTag(TogglerType::Locked);
@@ -230,10 +235,10 @@ bool FilterAndSortPopup::setup() {
   m_actionMenu->setLayout(RowLayout::create()->setGrowCrossAxis(true)->setAxisAlignment(AxisAlignment::Center)->setGap(layoutGap));
   ButtonSprite *cancelSprite = ButtonSprite::create("Cancel");
   CCMenuItemSpriteExtra *cancel = CCMenuItemSpriteExtra::create(cancelSprite, this, menu_selector(FilterAndSortPopup::onActionButton));
-  cancel->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale(0.5f));
+  cancel->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, 0.5f));
   ButtonSprite *applySprite = ButtonSprite::create("Apply");
   CCMenuItemSpriteExtra *apply = CCMenuItemSpriteExtra::create(applySprite, this, menu_selector(FilterAndSortPopup::onActionButton));
-  apply->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale(0.5f));
+  apply->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, 0.5f));
   m_actionMenu->setContentWidth(m_size.width - 2*HORIZONTAL_BORDER_SIZE - delta);
   cancel->setTag(ActionButtonType::Cancel);
   apply->setTag(ActionButtonType::Apply);
@@ -246,7 +251,7 @@ bool FilterAndSortPopup::setup() {
   m_actionMenu->setPosition((m_size/2).width, m_actionMenu->getContentHeight()/2 + delta/2 + BOTTOM_BORDER_SIZE);
   m_mainLayer->addChild(m_actionMenu);
   
-  auto separator2 = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
+  CCLayerColor* separator2 = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
   separator2->setPosition(separator->getPositionX(), m_actionMenu->getPositionY() + m_actionMenu->getContentHeight()/2 + delta/2);
   m_mainLayer->addChild(separator2);
 

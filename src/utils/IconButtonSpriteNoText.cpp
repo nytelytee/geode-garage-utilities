@@ -25,7 +25,7 @@ bool IconButtonSpriteNoText::init(char const* bg, bool bgIsFrame, cocos2d::CCNod
 }
 
 void IconButtonSpriteNoText::updateLayout() {
-  auto size = CCSize { 25.f, 25.f };
+  CCSize size{25.f, 25.f};
   if (m_icon) limitNodeSize(m_icon, size, 1.f, .1f);
   size += CCSize{10.f, 10.f};
 

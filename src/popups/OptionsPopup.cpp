@@ -6,6 +6,7 @@
 #include <popups/OptionsPopup.hpp>
 #include <popups/FilterAndSortPopup.hpp>
 #include <utils/LinkedCCMenu.hpp>
+#include <utils/CCMenuItemTogglerSpoof.hpp>
 
 
 using namespace geode::prelude;
@@ -32,17 +33,17 @@ void OptionsPopup::toggleOption(CCObject *sender) {
 
 void OptionsPopup::addOption(const char* name, int option, bool isGameVariable) {
 
-  CCMenuItemToggler *toggler = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(OptionsPopup::toggleOption), 1);
+  CCMenuItemToggler *toggler = createTogglerWithStandardSpritesSpoofOn(this, menu_selector(OptionsPopup::toggleOption));
   toggler->setTag(option << 1 | int(isGameVariable));
   toggler->setScale(0.8f);
   toggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
 
-  auto label = CCLabelBMFont::create(name, "bigFont.fnt");
+  CCLabelBMFont* label = CCLabelBMFont::create(name, "bigFont.fnt");
   float maxScale = 0.375f;
   if (label->getContentSize().width * maxScale > (m_size.width - 2*HORIZONTAL_BORDER_SIZE - 40 - toggler->getContentSize().width/0.8f)) {
     maxScale = (m_size.width - 2*HORIZONTAL_BORDER_SIZE - 40 - toggler->getContentSize().width/0.8f) / label->getContentSize().width;
   }
-  label->setLayoutOptions(AxisLayoutOptions::create()->setBreakLine(true)->setSameLine(true)->setMaxScale(maxScale));
+  label->setLayoutOptions(AxisLayoutOptions::create()->setBreakLine(true)->setSameLine(true)->setScaleLimits({}, maxScale));
   
   if (isGameVariable) {
     std::string gameVariableStr = fmt::format("{:04}", option);
@@ -78,11 +79,11 @@ bool OptionsPopup::setup(bool gameVar, FilterAndSortPopup *parent) {
   float realTitleHeight = 2*titleMargin + titleHeight;
   float separatorHeight = 1;
 
-  auto separator = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separatorHeight);
+  CCLayerColor* separator = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separatorHeight);
   separator->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - titleMargin);
 
   m_buttonMenu = CCMenu::create();
-  m_buttonMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Start)->setGrowCrossAxis(true)->setAutoScale(true));
+  m_buttonMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Start)->setGrowCrossAxis(true)->setAutoScale(true)->setGap(10.f));
   m_buttonMenu->setContentSize({m_size.width - 2*HORIZONTAL_BORDER_SIZE - 40, 0});
 
   m_buttonMenu->setPosition(m_size/2 - CCPoint{0, realTitleHeight/2});

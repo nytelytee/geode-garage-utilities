@@ -14,6 +14,7 @@ protected:
   BoundCCMenu *m_buttonMenu;
   ScrollLayer *m_scrollLayer;
   CCSize m_scrollLayerSize;
+  CCSize m_buttonMenuSize;
   FilterAndSortPopup *parentPopup;
 
   virtual void onTopMenuButton(CCObject *) {};

@@ -14,7 +14,7 @@ class $modify(HookedPurchaseItemPopup, PurchaseItemPopup) {
   
   void onPurchase(CCObject* sender) {
     PurchaseItemPopup::onPurchase(sender);
-    auto scene = CCScene::get();
+    CCScene* scene = CCScene::get();
     GJGarageLayer* garage = getChildOfType<GJGarageLayer>(scene, 0);
     if (!garage) return;
     

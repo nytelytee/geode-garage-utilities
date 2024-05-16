@@ -42,10 +42,6 @@ std::optional<bool> compareByCategory(unsigned icon1, unsigned icon2, UnlockType
   if (!iconKitState.settings.strictCategory) return std::nullopt;
 
   // if the items are the same category, the order of the items in the category defines the sorting order in strict mode
-  //auto icon1CategoryIndex = std::find(CATEGORIES[unlockType][icon1Category].begin(), CATEGORIES[unlockType][icon1Category].end(), icon1);
-  //auto icon2CategoryIndex = std::find(CATEGORIES[unlockType][icon2Category].begin(), CATEGORIES[unlockType][icon2Category].end(), icon2);
-  //return icon1CategoryIndex < icon2CategoryIndex;
-  //
   return CATEGORY_INDEX_FOR_ICON[unlockType][icon1] < CATEGORY_INDEX_FOR_ICON[unlockType][icon2];
 }
 
@@ -133,7 +129,7 @@ unsigned positionToDisplay(UnlockType unlockType, unsigned item) {
 }
 
 unsigned displayToPosition(UnlockType unlockType, unsigned item) {
-  auto p = std::find(iconKitState.acceptedIcons[unlockType].begin(), iconKitState.acceptedIcons[unlockType].end(), item);
+  std::vector<unsigned>::iterator p = std::find(iconKitState.acceptedIcons[unlockType].begin(), iconKitState.acceptedIcons[unlockType].end(), item);
   if (p != iconKitState.acceptedIcons[unlockType].end()) return p - iconKitState.acceptedIcons[unlockType].begin() + 1;
   
   unsigned delta = 0;

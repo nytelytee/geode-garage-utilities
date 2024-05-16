@@ -27,6 +27,7 @@ add_library(${PROJECT_NAME} SHARED
   src/utils/IconButtonSpriteNoText.cpp
   src/utils/BoundCCMenu.cpp
   src/utils/LinkedCCMenu.cpp
+  src/utils/CCMenuItemTogglerSpoof.cpp
 
   src/iconkit.cpp
   src/logic.cpp

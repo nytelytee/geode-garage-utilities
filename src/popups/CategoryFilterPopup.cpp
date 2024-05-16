@@ -5,6 +5,7 @@
 #include <iconkit.hpp>
 #include <popups/FilterPopup.hpp>
 #include <popups/CategoryFilterPopup.hpp>
+#include <utils/CCMenuItemTogglerSpoof.hpp>
 
 
 using namespace geode::prelude;
@@ -24,11 +25,14 @@ void CategoryFilterPopup::toggleCategory(CCObject *sender) {
   iconKitState.pendingSettings.categories[CATEGORIES_IN_ORDER[toggler->getTag()]] = !toggler->isToggled(); 
 }
 
+
+
 void CategoryFilterPopup::addCategory(int tag, std::string category) {
 
-  CCMenuItemToggler *toggler = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(CategoryFilterPopup::toggleCategory), 1);
+  CCMenuItemToggler *toggler = createTogglerWithStandardSpritesSpoofOn(this, menu_selector(CategoryFilterPopup::toggleCategory));
   toggler->setTag(tag);
   toggler->setScale(0.6f);
+
   toggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
 
   bool nextEven = !((m_buttonMenu->getChildrenCount() / 2 + 1) & 1);
@@ -44,7 +48,7 @@ void CategoryFilterPopup::addCategory(int tag, std::string category) {
     AxisLayoutOptions::create()->
     setBreakLine(nextEven)->
     setSameLine(nextEven)->
-    setMaxScale(maxScale)
+    setScaleLimits({}, maxScale)
   );
   toggler->toggle(iconKitState.pendingSettings.categories[category]);
 
@@ -63,10 +67,8 @@ void CategoryFilterPopup::customSetup() {
   m_buttonMenu->updateLayout();
   
   for (size_t i = 0; i < m_buttonMenu->getChildrenCount()/2; i += 2) {
-    //CCMenuItemToggler *toggler = getChild<CCMenuItemToggler>(m_buttonMenu, 2*i);
     CCLabelBMFont *label = getChild<CCLabelBMFont>(m_buttonMenu, 2*i+1);
-    float gap = m_scrollLayerSize.width/2 - label->boundingBox().getMaxX();
-    log::info("{} {}", label->getString(), gap);
+    float gap = m_buttonMenuSize.width/2 - label->boundingBox().getMaxX();
     label->setLayoutOptions(static_cast<AxisLayoutOptions *>(label->getLayoutOptions())->setNextGap(gap));
   }
 

@@ -34,8 +34,8 @@ void FilterPopup::preCustomSetup() {
   
   float separatorHeight = 1;
 
-  auto separatorTop = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separatorHeight);
-  auto separatorBottom = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separatorHeight);
+  CCLayerColor* separatorTop = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separatorHeight);
+  CCLayerColor* separatorBottom = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separatorHeight);
   
   float titleMargin = m_bgSprite->boundingBox().getMaxY() - m_title->boundingBox().getMaxY() - TOP_BORDER_SIZE;
   float titleHeight = m_title->getScaledContentSize().height;
@@ -45,7 +45,10 @@ void FilterPopup::preCustomSetup() {
   
   // center on x, flush to top on y, so empty space is delta/2 horizontally and delta on the bottom
   float delta = 20;
-  m_scrollLayerSize = usableSize - CCPoint{delta, delta};
+  //m_scrollLayerSize = usableSize - CCPoint{delta, delta};
+  m_scrollLayerSize = usableSize - CCPoint{0, delta};
+  m_buttonMenuSize = usableSize - CCPoint{delta, delta};
+
   
   m_actionButtonMenu = CCMenu::create();
   m_actionButtonMenu->setAnchorPoint({0, 0});
@@ -64,9 +67,9 @@ void FilterPopup::preCustomSetup() {
   topMenuNoneButton->setTag(1);
   topMenuInvertButton->setTag(2);
 
-  topMenuAllButton->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale((delta - separatorHeight - BOTTOM_BORDER_SIZE)/topMenuAllButton->getContentHeight()));
-  topMenuNoneButton->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale((delta - separatorHeight - BOTTOM_BORDER_SIZE)/topMenuNoneButton->getContentHeight()));
-  topMenuInvertButton->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale((delta - separatorHeight - BOTTOM_BORDER_SIZE)/topMenuInvertButton->getContentHeight()));
+  topMenuAllButton->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, (delta - separatorHeight - BOTTOM_BORDER_SIZE)/topMenuAllButton->getContentHeight()));
+  topMenuNoneButton->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, (delta - separatorHeight - BOTTOM_BORDER_SIZE)/topMenuNoneButton->getContentHeight()));
+  topMenuInvertButton->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, (delta - separatorHeight - BOTTOM_BORDER_SIZE)/topMenuInvertButton->getContentHeight()));
   
   m_actionButtonMenu->addChild(topMenuAllButton);
   m_actionButtonMenu->addChild(topMenuNoneButton);
@@ -85,12 +88,12 @@ void FilterPopup::preCustomSetup() {
 
   m_scrollLayer = ScrollLayer::create(m_scrollLayerSize);
   m_scrollLayer->setAnchorPoint({0, 0});
-  m_scrollLayer->setPosition(delta/2 + HORIZONTAL_BORDER_SIZE, BOTTOM_BORDER_SIZE + delta);
+  m_scrollLayer->setPosition(HORIZONTAL_BORDER_SIZE, BOTTOM_BORDER_SIZE + delta);
 
   m_buttonMenu = BoundCCMenu::create({m_mainLayer->convertToWorldSpace(m_scrollLayer->getPosition()), m_scrollLayer->getContentSize()});
-  m_buttonMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Start)->setGrowCrossAxis(true)->setAutoScale(true)->setGap(0));
-  m_buttonMenu->setContentSize({m_scrollLayerSize.width, 0});
+  m_buttonMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Start)->setGrowCrossAxis(true)->setAutoScale(true)->setGap(5.f));
+  m_buttonMenu->setContentSize({m_scrollLayerSize.width - delta, 0});
   m_buttonMenu->setAnchorPoint({0, 0});
-  m_buttonMenu->setPosition({0, 0});
+  m_buttonMenu->setPosition({delta/2, 0});
 
 }

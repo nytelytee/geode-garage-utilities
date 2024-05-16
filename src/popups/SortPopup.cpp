@@ -8,6 +8,7 @@
 
 #include <utils/LinkedCCMenu.hpp>
 #include <utils/IconButtonSpriteNoText.hpp>
+#include <utils/CCMenuItemTogglerSpoof.hpp>
 
 using namespace geode::prelude;
 
@@ -205,8 +206,8 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
   
   recalculateListItemBackgrounds();
   
-  auto separator = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
-  auto separator2 = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
+  CCLayerColor* separator = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
+  CCLayerColor* separator2 = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
   separator->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - title_margin);
   separator2->setPosition(HORIZONTAL_BORDER_SIZE, m_title->boundingBox().getMinY() - title_margin - m_sortingList->getScaledContentSize().height - separator_height);
 
@@ -219,13 +220,14 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
   togglerMenu->setPosition(separator2->getPosition() - CCPoint{-separator2->getContentWidth()/2, togglerMenu->getContentHeight()/2});
   togglerMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Start));
 
-  auto strictCategoryToggler = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(SortPopup::onToggle), 0.6f);
+  CCMenuItemToggler* strictCategoryToggler = createTogglerWithStandardSpritesSpoofOn(this, menu_selector(SortPopup::onToggle));
+  strictCategoryToggler->setScale(0.6f);
   strictCategoryToggler->setTag(0);
   strictCategoryToggler->toggle(iconKitState.pendingSettings.strictCategory);
-  auto strictCategoryLabel = CCLabelBMFont::create("Strict Category", "bigFont.fnt");
+  CCLabelBMFont* strictCategoryLabel = CCLabelBMFont::create("Strict Category", "bigFont.fnt");
 
   strictCategoryToggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
-  strictCategoryLabel->setLayoutOptions(AxisLayoutOptions::create()->setMaxScale(0.375f));
+  strictCategoryLabel->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, 0.375f));
   
   CCNode* spacer = CCNode::create();
   spacer->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false)->setNextGap(0));

@@ -266,27 +266,27 @@ struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
     if (!GJGarageLayer::init()) return false;
 
     if (!Mod::get()->getSettingValue<bool>("hide-player-options-button")) {
-      auto backMenu = static_cast<CCMenu *>(getChildByID("back-menu"));
+      CCMenu* backMenu = static_cast<CCMenu *>(getChildByID("back-menu"));
 
-      auto playerOptionsSprite = CCSprite::createWithSpriteFrameName("GJ_optionsBtn02_001.png");
-      auto playerOptions = CCMenuItemSpriteExtra::create(playerOptionsSprite, this, menu_selector(HookedGJGarageLayer::onPlayerOptions));
+      CCSprite* playerOptionsSprite = CCSprite::createWithSpriteFrameName("GJ_optionsBtn02_001.png");
+      CCMenuItemSpriteExtra* playerOptions = CCMenuItemSpriteExtra::create(playerOptionsSprite, this, menu_selector(HookedGJGarageLayer::onPlayerOptions));
       
       backMenu->addChild(playerOptions);
       backMenu->updateLayout();
     }
     if (!Mod::get()->getSettingValue<bool>("hide-filter-and-sort-button")) {
-      auto shardsMenu = static_cast<CCMenu *>(getChildByID("shards-menu"));
-      auto filterIcon = CCSprite::createWithSpriteFrameName("GJ_filterIcon_001.png");
-      auto sortIcon = CCSprite::createWithSpriteFrameName("GJ_sortIcon_001.png");
-      filterIcon->setLayoutOptions(AxisLayoutOptions::create()->setMinScale(1/3.0f));
-      sortIcon->setLayoutOptions(AxisLayoutOptions::create()->setMinScale(1/3.0f));
-      auto filterAndSortCollection = CCNode::create();
+      CCMenu* shardsMenu = static_cast<CCMenu *>(getChildByID("shards-menu"));
+      CCSprite* filterIcon = CCSprite::createWithSpriteFrameName("GJ_filterIcon_001.png");
+      CCSprite* sortIcon = CCSprite::createWithSpriteFrameName("GJ_sortIcon_001.png");
+      filterIcon->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits(1/3.0f, {}));
+      sortIcon->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits(1/3.0f, {}));
+      CCNode* filterAndSortCollection = CCNode::create();
       filterAndSortCollection->setLayout(RowLayout::create()->setAutoScale(true)->setGap(0));
       filterAndSortCollection->addChild(filterIcon);
       filterAndSortCollection->addChild(sortIcon);
 
-      auto filterAndSortSprite = IconButtonSpriteNoText::create("GJ_button_01.png", filterAndSortCollection);
-      auto filterAndSort = CCMenuItemSpriteExtra::create(filterAndSortSprite, this, menu_selector(HookedGJGarageLayer::onFilterAndSort));
+      IconButtonSpriteNoText* filterAndSortSprite = IconButtonSpriteNoText::create("GJ_button_01.png", filterAndSortCollection);
+      CCMenuItemSpriteExtra* filterAndSort = CCMenuItemSpriteExtra::create(filterAndSortSprite, this, menu_selector(HookedGJGarageLayer::onFilterAndSort));
 
       filterAndSortCollection->setContentSize(filterAndSortSprite->getContentSize() / sqrt(2));
       filterAndSortCollection->setAnchorPoint({0.5, 0.5});
