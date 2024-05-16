@@ -24,10 +24,4 @@ struct HookedGameManager : Modify<HookedGameManager, GameManager> {
     return GameManager::isIconUnlocked(positionToDisplay(ICON_TO_UNLOCK[iconType], icon), iconType);
   }
 
-  int activeIconForType(IconType iconType) {
-    if (!SHOULD_CHANGE_ICON_TYPE(iconType) || !iconKitState.shouldChangeIcons)
-      return GameManager::activeIconForType(iconType);
-    return displayToPosition(ICON_TO_UNLOCK[iconType], GameManager::activeIconForType(iconType));
-  }
-
 };

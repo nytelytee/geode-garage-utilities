@@ -128,7 +128,8 @@ struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
     page = iconKitState.overridePageForIcon[iconType] ? iconKitState.pageForIcon[iconType] : page;
     iconKitState.overridePageForIcon[iconType] = false;
 
-    int activeIconPosition = gm->activeIconForType(iconType);
+    int activeIconDisplay = gm->activeIconForType(iconType);
+    int activeIconPosition = displayToPosition(unlockType, activeIconDisplay);
     // active icon has been filtered out
     if (!activeIconPosition && page == -1) page = 0;
     page = page == -1 ? (activeIconPosition - 1)/36 : page;
@@ -148,18 +149,30 @@ struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
       CCMenuItemSpriteExtra *icon = getChild<CCMenuItemSpriteExtra>(menu, i);
       icon->setTag(selectedIconDisplay);
     }
-    recalculateNavdotMenu(page, iconType, unlockType);
     
+    recalculateCursor(activeIconDisplay);
+    recalculateNavdotMenu(page, iconType, unlockType);
     toggleNavigationMenus(iconKitState.settings.hideNavigationMenuOnSinglePage ? maxPage : fakeMaxIconCount, maxPage);
 
     iconKitState.pageForIcon[iconType] = page;
   }
+  
+  void recalculateCursor(int activeIconDisplay) {
+    CCMenu* iconMenu = getChild<CCMenu>(getChild<ListButtonPage>(getChild<ExtendedLayer>(getChild<BoomScrollLayer>(m_iconSelection, 0), 0), 0), 0);
+    CCMenuItemSpriteExtra* activeIcon = static_cast<CCMenuItemSpriteExtra*>(iconMenu->getChildByTag(activeIconDisplay));
+    if (!activeIcon)
+      m_cursor1->setVisible(false);
+    else {
+      m_cursor1->setVisible(true);
+      m_cursor1->setPosition(iconMenu->convertToWorldSpace(activeIcon->getPosition()));
+    }
+  }
 
   void toggleNavigationMenus(bool isNavdotMenuVisible, bool areArrowsVisible) {
-    CCMenu *navdotMenu = static_cast<CCMenu *>(getChildByID("navdot-menu"));
-    // no node ids, first setupPage is called before init is over
-    if (!navdotMenu) navdotMenu = getChild<CCMenu>(this, 13);
-    if (!navdotMenu) return;
+
+    // why the is it called this who named this i just wanna talk
+    // it's called the navdot menu in node ids
+    CCMenu* navdotMenu = m_iconSelectionMenu;
 
     navdotMenu->setVisible(isNavdotMenuVisible);
     navdotMenu->setEnabled(isNavdotMenuVisible);
@@ -184,10 +197,10 @@ struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
 
     int maxPage = (fakeCountForType(iconType, INT_MAX)-1)/36;
     maxPage = maxPage == -1 ? 0 : maxPage;
-
-    CCMenu *navdotMenu = static_cast<CCMenu *>(getChildByID("navdot-menu"));
-    if (!navdotMenu) navdotMenu = getChild<CCMenu>(this, 13);
-    if (!navdotMenu) return;
+    
+    // why the is it called this who named this i just wanna talk
+    // it's called the navdot menu in node ids
+    CCMenu* navdotMenu = m_iconSelectionMenu;
     
     // add missing pages to the navdot menu
     for (int i = navdotMenu->getChildrenCount(); i <= maxPage; i++) {
@@ -293,14 +306,14 @@ struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
       // in scope for this mod, maybe some api mod? for now, i'll just account for Capeling's mod since
       // that's the only mod on the index I know that changes this area
       if (!demonsLabel) {
-        diamondShardsLabel->removeFromParent();
-        diamondShardsIcon->removeFromParent();
+        diamondShardsLabel->setVisible(false);
+        diamondShardsIcon->setVisible(false);
       } else {
         float spacing = diamondShardsLabel->boundingBox().getMaxY() - demonsLabel->boundingBox().getMaxY();
         demonsIcon->setPositionY(demonsIcon->getPositionY() + spacing);
         demonsLabel->setPositionY(demonsLabel->getPositionY() + spacing);
-        diamondShardsLabel->removeFromParent();
-        diamondShardsIcon->removeFromParent();
+        diamondShardsLabel->setVisible(false);
+        diamondShardsIcon->setVisible(false);
       }
     }
 

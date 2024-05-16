@@ -15,6 +15,7 @@ add_library(${PROJECT_NAME} SHARED
   src/hooks/GJGarageLayer.cpp
   src/hooks/GJItemIcon.cpp
   src/hooks/ItemInfoPopup.cpp
+  src/hooks/PurchaseItemPopup.cpp
 
   src/popups/OptionsPopup.cpp
   src/popups/SortPopup.cpp
