@@ -4,7 +4,7 @@ import sys
 def main() -> None:
     content = json.load(sys.stdin);
 
-    print("std::unordered_map<UnlockType, std::unordered_map<std::string, std::vector<unsigned>>> CATEGORIES = {")
+    print("std::unordered_map<UnlockType, std::unordered_map<std::string, std::vector<int>>> CATEGORIES = {")
     for unlock_type in content:
         print("  { UnlockType::" + unlock_type + ", {")
         for category in content[unlock_type]:
@@ -22,7 +22,7 @@ def main() -> None:
         print(f"  \"{category}\",")
     print("};\n")
 
-    print("std::unordered_map<UnlockType, std::unordered_map<unsigned, std::string>> CATEGORY_FOR_ICON = {")
+    print("std::unordered_map<UnlockType, std::unordered_map<int, std::string>> CATEGORY_FOR_ICON = {")
     for unlock_type in content:
         print("  { UnlockType::" + unlock_type + ", {")
         for category in content[unlock_type]:
@@ -31,7 +31,7 @@ def main() -> None:
         print("  }},")
     print("};\n")
     
-    print("std::unordered_map<UnlockType, std::unordered_map<unsigned, size_t>> CATEGORY_INDEX_FOR_ICON = {")
+    print("std::unordered_map<UnlockType, std::unordered_map<int, size_t>> CATEGORY_INDEX_FOR_ICON = {")
     for unlock_type in content:
         print("  { UnlockType::" + unlock_type + ", {")
         for category in content[unlock_type]:

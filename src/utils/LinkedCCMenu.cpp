@@ -20,7 +20,7 @@ void LinkedCCMenu::ccTouchMoved(CCTouch *touch, CCEvent *event) {
     if (link == m_touching) {
       m_touching->ccTouchMoved(touch, event);
       continue;
-    } else if (link == m_touching) continue;
+    }
     if (link->ccTouchBegan(touch, event)) {
       m_touching->ccTouchCancelled(touch, event);
       m_touching = link;
@@ -37,12 +37,12 @@ void LinkedCCMenu::ccTouchCancelled(CCTouch *touch, CCEvent *event) {
 void LinkedCCMenu::sortAndUpdatePriority() {
   m_links.sort(
     [](CCMenu *a, CCMenu *b) {
-      int atp = a->getTouchPriority();
-      int btp = b->getTouchPriority();
-      unsigned int aooa = a->getOrderOfArrival();
-      unsigned int booa = b->getOrderOfArrival();
-      if (atp != btp) return atp < btp;
-      return aooa < booa;
+      int aPrio = a->getTouchPriority();
+      int bPrio = b->getTouchPriority();
+      unsigned int aOOA = a->getOrderOfArrival();
+      unsigned int bOOA = b->getOrderOfArrival();
+      if (aPrio != bPrio) return aPrio < bPrio;
+      return aOOA < bOOA;
     }
   );
   if (!m_links.empty()) setTouchPriority((*m_links.begin())->getTouchPriority() - 1);

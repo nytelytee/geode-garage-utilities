@@ -13,8 +13,6 @@ struct IconKitSettings {
   // filters
   bool locked;
   bool unlocked;
-  bool vanilla;
-  bool custom;
   bool invert;
   std::unordered_map<std::string, bool> categories;
   std::unordered_map<int, bool> authors;
@@ -45,42 +43,26 @@ struct IconKitSettings {
 // specialization of icon kit settings to enable saving as mod data
 template<>
 struct matjson::Serialize<IconKitSettings> {
-  static IconKitSettings from_json(matjson::Value const& value);
-  static matjson::Value to_json(IconKitSettings const& value);
-  static bool is_json(matjson::Value const&) { return true; }
+  static Result<IconKitSettings> fromJson(matjson::Value const& value);
+  static matjson::Value toJson(IconKitSettings const& value);
 };
 
 struct IconKitState {
 
-  // currently active settings
+  // currently active settings (not defined when the game is launched)
   IconKitSettings settings;
-  // settings that will become the currently active settings when Apply is pressed
+  // settings that will become the currently active settings when Apply is pressed (or loaded when GJGarageLayer::init is called)
   IconKitSettings pendingSettings;
 
-  std::unordered_map<UnlockType, std::vector<unsigned>> acceptedIcons;
-  std::unordered_map<UnlockType, std::vector<unsigned>> deniedIcons;
+  std::unordered_map<UnlockType, std::vector<int>> acceptedIcons;
+  std::unordered_map<UnlockType, std::vector<int>> deniedIcons;
   
-  // current global state to be used inside the sorting functions
-  UnlockType comparison;
-  bool reverseSort;
-
-  IconType selectedIconType;
-
-  std::unordered_map<IconType, int> pageForIcon;
-  // when recalculating filters, page -1 (or 0 if the active icon is filtered out)
-  // should forcefully be shown instead of the previous active page when
-  // switching to a tab you have not switched to since the recalculation,
-  // use this boolean to override this in setupPage
-  std::unordered_map<IconType, bool> overridePageForIcon;
+  // if nonzero, GameManager::countForType is modified to give the icon count that would correspond to the correct page count
+  int shouldChangeIcons = 0;
   
-  bool shouldChangeIcons = false;
+  // colon's lite ad chests mod workaround
+  bool stubOutSetupPageOnce = false;
 
-  IconKitState() {
-    for (IconType iconType : ICON_TYPES_TO_CHANGE) {
-      pageForIcon[iconType] = -1;
-      overridePageForIcon[iconType] = false;
-    }
-  }
 };
 
 extern IconKitState iconKitState;

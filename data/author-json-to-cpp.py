@@ -4,7 +4,7 @@ import sys
 def main() -> None:
     content = json.load(sys.stdin);
 
-    print("std::unordered_map<UnlockType, std::unordered_map<int, std::vector<unsigned>>> AUTHORS = {")
+    print("std::unordered_map<UnlockType, std::unordered_map<int, std::vector<int>>> AUTHORS = {")
     for i, unlock_type in enumerate(content):
         comma1 = (i != len(content) - 1) * ','
         comma1 = ','
@@ -30,7 +30,7 @@ def main() -> None:
         print(f"{author},")
     print("};\n")
     
-    print("std::unordered_map<UnlockType, std::unordered_map<unsigned, int>> AUTHOR_FOR_ICON = {")
+    print("std::unordered_map<UnlockType, std::unordered_map<int, int>> AUTHOR_FOR_ICON = {")
     for unlock_type in content:
         print("  { UnlockType::" + unlock_type + ", {")
         for author in content[unlock_type]:

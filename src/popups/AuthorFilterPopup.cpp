@@ -14,20 +14,20 @@ void AuthorFilterPopup::onTopMenuButton(CCObject *sender) {
   CCMenuItemSpriteExtra *button = static_cast<CCMenuItemSpriteExtra *>(sender);
   int tag = button->getTag();
   for (size_t i = 0; i < m_buttonMenu->getChildrenCount(); i += 2) {
-    CCMenuItemToggler *toggler = getChild<CCMenuItemToggler>(m_buttonMenu, i);
+    CCMenuItemToggler *toggler = getChild<CCMenuItemToggler>(m_buttonMenu, int(i));
     toggler->toggle(tag == 0 ? true : tag == 1 ? false : !toggler->isToggled());
-    iconKitState.pendingSettings.authors[AUTHORS_IN_ORDER[toggler->getTag()]] = toggler->isToggled();
+    iconKitState.pendingSettings.authors[AUTHORS_IN_ORDER[size_t(toggler->getTag())]] = toggler->isToggled();
   }
 }
 
 void AuthorFilterPopup::toggleAuthor(CCObject *sender) {
   CCMenuItemToggler *toggler = static_cast<CCMenuItemToggler *>(sender);
-  iconKitState.pendingSettings.authors[AUTHORS_IN_ORDER[toggler->getTag()]] = !toggler->isToggled(); 
+  iconKitState.pendingSettings.authors[AUTHORS_IN_ORDER[size_t(toggler->getTag())]] = !toggler->isToggled(); 
 }
 
 void AuthorFilterPopup::goToAuthorProfile(CCObject *sender) {
   CCMenuItemSpriteExtra *label_button = static_cast<CCMenuItemSpriteExtra *>(sender);
-  int accountID = AUTHORS_IN_ORDER[label_button->getTag()];
+  int accountID = AUTHORS_IN_ORDER[size_t(label_button->getTag())];
   ProfilePage::create(accountID, accountID == GJAccountManager::get()->m_accountID)->show();
 }
 
@@ -38,36 +38,40 @@ void AuthorFilterPopup::addAuthor(int tag, int accountID) {
   toggler->setScale(0.6f);
   toggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
 
-  bool next_author_even = !((m_buttonMenu->getChildrenCount() / 2 + 1) & 1);
+  bool nextEven = !((m_buttonMenu->getChildrenCount() / 2 + 1) & 1);
 
-  gd::string username = !accountID ? "RobTop" : GameStatsManager::sharedState()->usernameForAccountID(accountID);
+  gd::string username = !accountID ? "RobTop" : GameLevelManager::get()->tryGetUsername(accountID);
   const char* font = accountID ? "goldFont.fnt" : "bigFont.fnt";
   ccColor3B color = accountID < 0 ? ccColor3B{90, 255, 255} : ccColor3B{255, 255, 255};
   CCLabelBMFont* label = CCLabelBMFont::create(username.c_str(), font);
 
   label->setColor(color);
 
-  float maxScale = 0.375f;
-  // make the fonts the same size (the size of bigFont.fnt)
-  if (font[0] == 'g') maxScale *= 1.24096385542169f;  // goldFont.fnt
-  if (label->getContentSize().width * maxScale > (m_scrollLayerSize.width/2 - toggler->getContentSize().width)) {
-    maxScale = (m_scrollLayerSize.width/2 - toggler->getContentSize().width) / label->getContentSize().width;
-  }
+  // make the gold font the same initial size as the big font
+  float maxScale = 0.375f * (font[0] == 'g' ? 1.24096385542169f : 1.f);
 
-  CCMenuItemSpriteExtra *label_button = CCMenuItemSpriteExtra::create(label, this, menu_selector(AuthorFilterPopup::goToAuthorProfile));
-  if (accountID <= 0) label_button->setEnabled(false);
-  label_button->setTag(tag);
+  float gap = static_cast<AxisLayout*>(m_buttonMenu->getLayout())->getGap();
+  float textWidth = label->getContentSize().width;
+  // technically, one of the gaps is not always the same as the other, it may get extended later to put the
+  // toggler and label exactly on the second half of the menu, but if that happens, then that means that the
+  // normal minimum of 0.375 (plus the gold font scaling) succeeded, so this is fine
+  float maximumTextWidth = m_buttonMenuSize.width/2 - toggler->getScaledContentSize().width - gap - (!nextEven)*gap;
+  if (textWidth * maxScale > maximumTextWidth) maxScale = maximumTextWidth/textWidth;
+
+  CCMenuItemSpriteExtra *labelButton = CCMenuItemSpriteExtra::create(label, this, menu_selector(AuthorFilterPopup::goToAuthorProfile));
+  if (accountID <= 0) labelButton->setEnabled(false);
+  labelButton->setTag((int) tag);
   
-  label_button->setLayoutOptions(
+  labelButton->setLayoutOptions(
     AxisLayoutOptions::create()->
-    setBreakLine(next_author_even)->
-    setSameLine(next_author_even)->
-    setScaleLimits({}, maxScale)
+    setBreakLine(nextEven)->
+    setSameLine(nextEven)->
+    setScaleLimits(0.f, maxScale)
   );
   toggler->toggle(iconKitState.pendingSettings.authors[accountID]);
 
   m_buttonMenu->addChild(toggler);
-  m_buttonMenu->addChild(label_button);
+  m_buttonMenu->addChild(labelButton);
 
 }
 
@@ -76,14 +80,14 @@ void AuthorFilterPopup::customSetup() {
   this->setTitle("Author Filter");
   
   for (size_t i = 0; i < AUTHORS_IN_ORDER.size(); i++)
-    addAuthor(i, AUTHORS_IN_ORDER[i]);
+    addAuthor(int(i), AUTHORS_IN_ORDER[i]);
 
   m_buttonMenu->updateLayout();
   
   for (size_t i = 0; i < m_buttonMenu->getChildrenCount()/2; i += 2) {
-    CCMenuItemSpriteExtra *label_button = getChild<CCMenuItemSpriteExtra>(m_buttonMenu, 2*i+1);
-    float gap = m_buttonMenuSize.width/2 - label_button->boundingBox().getMaxX();
-    label_button->setLayoutOptions(static_cast<AxisLayoutOptions *>(label_button->getLayoutOptions())->setNextGap(gap));
+    CCMenuItemSpriteExtra *labelButton = getChild<CCMenuItemSpriteExtra>(m_buttonMenu, 2*int(i)+1);
+    float gap = m_buttonMenuSize.width/2 - labelButton->boundingBox().getMaxX();
+    labelButton->setLayoutOptions(static_cast<AxisLayoutOptions *>(labelButton->getLayoutOptions())->setNextGap(gap));
   }
 
   m_buttonMenu->updateLayout();

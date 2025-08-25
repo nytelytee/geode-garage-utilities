@@ -13,7 +13,6 @@ add_library(${PROJECT_NAME} SHARED
 
   src/hooks/GameManager.cpp
   src/hooks/GJGarageLayer.cpp
-  src/hooks/GJItemIcon.cpp
   src/hooks/ItemInfoPopup.cpp
   src/hooks/PurchaseItemPopup.cpp
 
@@ -24,7 +23,7 @@ add_library(${PROJECT_NAME} SHARED
   src/popups/CategoryFilterPopup.cpp
   src/popups/FilterAndSortPopup.cpp
 
-  src/utils/IconButtonSpriteNoText.cpp
+  src/utils/SortIconButtonSprite.cpp
   src/utils/BoundCCMenu.cpp
   src/utils/LinkedCCMenu.cpp
   src/utils/CCMenuItemTogglerSpoof.cpp
@@ -32,6 +31,7 @@ add_library(${PROJECT_NAME} SHARED
   src/iconkit.cpp
   src/logic.cpp
   src/main.cpp
+  src/debug.cpp
 )
 include_directories(${PROJECT_NAME} PUBLIC include)
 
@@ -45,10 +45,25 @@ endif()
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 if (MSVC)
-  target_compile_options(${PROJECT_NAME} PUBLIC "/W4")
+  target_compile_options(
+    ${PROJECT_NAME} PUBLIC
+    "/Wall"
+    "/wd4820"  # padding inserted
+    "/wd4710"  # function not inlined
+    #"/wd4265"  # non-virtual destructor
+    "/wd5045"  # disable spectre mitigation warning
+    # implicitly marked as deleted
+    "/wd4625"
+    "/wd5026"
+    "/wd4626"
+    "/wd5027"
+    "/wd4464"  # relative include path, in geode
+  )
 else()
   target_compile_options(${PROJECT_NAME} PUBLIC "-Wall" "-Wextra" "-Wpedantic" "-Wno-dollar-in-identifier-extension")
 endif()
+
+set_property(TARGET GarageUtilities PROPERTY COMPILE_WARNING_AS_ERROR ON)
 
 # Set up dependencies, resources, link Geode
 setup_geode_mod(${PROJECT_NAME})

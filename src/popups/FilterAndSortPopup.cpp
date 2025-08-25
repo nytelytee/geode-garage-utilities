@@ -32,54 +32,44 @@ SpacerNode* createSpacerNodeWithBreakLine(size_t grow) {
 
 enum ActionButtonType { Cancel, Apply };
 enum MenuButtonType { AuthorFilterPopup, CategoryFilterPopup, SortPopup, IconKitDisplayOptionsPopup, ResetToDefault, SelectAll, DeselectAll, InvertFilter, ChangeFilterType };
-enum TogglerType { Locked, Unlocked, Vanilla, Custom };
+enum TogglerType { Locked, Unlocked };
 
 void FilterAndSortPopup::onActionButton(CCObject *sender) {
   CCMenuItemSpriteExtra *button = static_cast<CCMenuItemSpriteExtra *>(sender);
   if (button->getTag() == ActionButtonType::Cancel) return Popup<>::onClose(sender);
-  iconKitState.settings = iconKitState.pendingSettings;
-  recalculateIconOrder();
-  // we are forcing every icon page to point to the page of the active icon
-  // (or the first page if the active icon is filtered out) after
-  // recalculating filters, to emulate what happens when you first
-  // open the garage
-  for (IconType iconType : ICON_TYPES_TO_CHANGE) {
-    iconKitState.pageForIcon[iconType] = -1;
-    iconKitState.overridePageForIcon[iconType] = true;
-  }
-  if (SHOULD_CHANGE_ICON_TYPE(iconKitState.selectedIconType))
-    getChildOfType<GJGarageLayer>(CCScene::get(), 0)->setupPage(-1, iconKitState.selectedIconType);
+  GJGarageLayer* garage = CCScene::get()->getChildByType<GJGarageLayer>(0);
+  recalculateIconOrderAndRemainOnSamePages(garage);
+  garage->selectTab(garage->m_iconType);
   Mod::get()->setSavedValue<IconKitSettings>("iconKitSettings", iconKitState.settings);
   Popup<>::onClose(sender);
 }
 
 void FilterAndSortPopup::refreshMenuState() {
-  getChildOfType<CCMenuItemToggler>(m_buttonMenu, 0)->toggle(iconKitState.pendingSettings.locked);
-  getChildOfType<CCMenuItemToggler>(m_buttonMenu, 1)->toggle(iconKitState.pendingSettings.unlocked);
-  getChildOfType<CCMenuItemToggler>(m_buttonMenu, 2)->toggle(iconKitState.pendingSettings.vanilla);
-  getChildOfType<CCMenuItemToggler>(m_buttonMenu, 3)->toggle(iconKitState.pendingSettings.custom);
+  
+  m_buttonMenu->getChildByType<CCMenuItemToggler>(0)->toggle(iconKitState.pendingSettings.locked);
+  m_buttonMenu->getChildByType<CCMenuItemToggler>(1)->toggle(iconKitState.pendingSettings.unlocked);
 
   bool allTrue =   std::all_of(iconKitState.pendingSettings.authors.begin(), iconKitState.pendingSettings.authors.end(), [](const std::pair<int, bool> element){ return element.second; });
   bool noneTrue = std::none_of(iconKitState.pendingSettings.authors.begin(), iconKitState.pendingSettings.authors.end(), [](const std::pair<int, bool> element){ return element.second; });
-  ButtonSprite *authorSprite   = getChild<ButtonSprite>(getChildOfType<CCMenuItemSpriteExtra>(m_buttonMenu, 0), 0);
+  ButtonSprite *authorSprite   = getChild<ButtonSprite>(m_buttonMenu->getChildByType<CCMenuItemSpriteExtra>(0), 0);
   if (noneTrue)     authorSprite->updateBGImage(iconKitState.pendingSettings.invert ? "GJ_button_01.png" : "GJ_button_06.png");
   else if (allTrue) authorSprite->updateBGImage(iconKitState.pendingSettings.invert ? "GJ_button_06.png" : "GJ_button_01.png");
   else              authorSprite->updateBGImage("GU_button_01.png"_spr);
 
   allTrue =   std::all_of(iconKitState.pendingSettings.categories.begin(), iconKitState.pendingSettings.categories.end(), [](const std::pair<std::string, bool> &element){ return element.second; });
   noneTrue = std::none_of(iconKitState.pendingSettings.categories.begin(), iconKitState.pendingSettings.categories.end(), [](const std::pair<std::string, bool> &element){ return element.second; });
-  ButtonSprite *categorySprite = getChild<ButtonSprite>(getChildOfType<CCMenuItemSpriteExtra>(m_buttonMenu, 1), 0);
+  ButtonSprite *categorySprite   = getChild<ButtonSprite>(m_buttonMenu->getChildByType<CCMenuItemSpriteExtra>(1), 0);
   if (noneTrue)     categorySprite->updateBGImage(iconKitState.pendingSettings.invert ? "GJ_button_01.png" : "GJ_button_06.png");
   else if (allTrue) categorySprite->updateBGImage(iconKitState.pendingSettings.invert ? "GJ_button_06.png" : "GJ_button_01.png");
   else              categorySprite->updateBGImage("GU_button_01.png"_spr);
   
-  ButtonSprite *sortSprite = getChild<ButtonSprite>(getChildOfType<CCMenuItemSpriteExtra>(m_buttonMenu, 2), 0);
+  ButtonSprite *sortSprite   = getChild<ButtonSprite>(m_buttonMenu->getChildByType<CCMenuItemSpriteExtra>(2), 0);
   if (randomNumber(1, 100) == 7) {
     sortSprite->updateBGImage("geode.loader/GE_button_04.png");
     sortSprite->m_BGSprite->setCapInsets({5, 5, 30, 30});
   } else sortSprite->updateBGImage("GJ_button_02.png");
 
-  ButtonSprite *displaySettingsSprite = getChild<ButtonSprite>(getChildOfType<CCMenuItemSpriteExtra>(m_buttonMenu, 3), 0);
+  ButtonSprite *displaySettingsSprite = getChild<ButtonSprite>(m_buttonMenu->getChildByType<CCMenuItemSpriteExtra>(3), 0);
   if (randomNumber(1, 100) == 7) {
     displaySettingsSprite->updateBGImage("geode.loader/GE_button_04.png");
     displaySettingsSprite->m_BGSprite->setCapInsets({5, 5, 30, 30});
@@ -112,8 +102,6 @@ void FilterAndSortPopup::onToggle(CCObject *sender) {
   switch (toggler->getTag()) {
     case TogglerType::Locked:   iconKitState.pendingSettings.locked = !toggler->isToggled(); break;
     case TogglerType::Unlocked: iconKitState.pendingSettings.unlocked = !toggler->isToggled(); break;
-    case TogglerType::Vanilla:  iconKitState.pendingSettings.vanilla = !toggler->isToggled(); break;
-    case TogglerType::Custom:   iconKitState.pendingSettings.custom = !toggler->isToggled(); break;
   }
 }
 
@@ -121,7 +109,7 @@ bool FilterAndSortPopup::setup() {
   iconKitState.pendingSettings = iconKitState.settings;
   this->setTitle("Filter & Sort");
   float separator_height = 1;
-  float title_margin = m_bgSprite->boundingBox().getMaxY() - m_title->boundingBox().getMaxY() - TOP_BORDER_SIZE;
+  float title_margin = m_bgSprite->boundingBox().getMaxY() - m_title->boundingBox().getMaxY() - VERTICAL_BORDER_SIZE;
   float delta = 20;
 
   CCLayerColor* separator = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
@@ -144,18 +132,6 @@ bool FilterAndSortPopup::setup() {
   CCLabelBMFont *unlockedLabel = CCLabelBMFont::create("Unlocked", "bigFont.fnt");
   unlockedLabel->setLayoutOptions(AxisLayoutOptions::create()->setSameLine(true)->setBreakLine(true)->setScaleLimits({}, 0.375f));
 
-  CCMenuItemToggler *vanillaToggler = createTogglerWithStandardSpritesSpoofOn(this, menu_selector(FilterAndSortPopup::onToggle));
-  vanillaToggler->setScale(0.6f);
-  vanillaToggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
-  CCLabelBMFont *vanillaLabel = CCLabelBMFont::create("Vanilla", "bigFont.fnt");
-  vanillaLabel->setLayoutOptions(AxisLayoutOptions::create()->setSameLine(false)->setBreakLine(false)->setScaleLimits({}, 0.375f));
-
-  CCMenuItemToggler *customToggler = createTogglerWithStandardSpritesSpoofOn(this, menu_selector(FilterAndSortPopup::onToggle));
-  customToggler->setScale(0.6f);
-  customToggler->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
-  CCLabelBMFont *customLabel = CCLabelBMFont::create("Custom", "bigFont.fnt");
-  customLabel->setLayoutOptions(AxisLayoutOptions::create()->setSameLine(false)->setBreakLine(true)->setScaleLimits({}, 0.375f));
-
   ButtonSprite *authorSprite = ButtonSprite::create("Author");
   CCMenuItemSpriteExtra *author = CCMenuItemSpriteExtra::create(authorSprite, this, menu_selector(FilterAndSortPopup::onMenuButton));
   author->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits({}, 0.5f));
@@ -175,8 +151,6 @@ bool FilterAndSortPopup::setup() {
 
   lockedToggler->setTag(TogglerType::Locked);
   unlockedToggler->setTag(TogglerType::Unlocked);
-  vanillaToggler->setTag(TogglerType::Vanilla);
-  customToggler->setTag(TogglerType::Custom);
 
   author->setTag(MenuButtonType::AuthorFilterPopup);
   category->setTag(MenuButtonType::CategoryFilterPopup);
@@ -189,11 +163,6 @@ bool FilterAndSortPopup::setup() {
   m_buttonMenu->addChild(lockedLabel);
   m_buttonMenu->addChild(unlockedToggler);
   m_buttonMenu->addChild(unlockedLabel);
-  
-  m_buttonMenu->addChild(vanillaToggler);
-  m_buttonMenu->addChild(vanillaLabel);
-  m_buttonMenu->addChild(customToggler);
-  m_buttonMenu->addChild(customLabel);
   
   m_buttonMenu->addChild(SpacerNode::create(1));
   m_buttonMenu->addChild(author);
@@ -209,23 +178,14 @@ bool FilterAndSortPopup::setup() {
 
   m_buttonMenu->updateLayout();
  
-  // i want everything to be aligned to center, but the togglers to be aligned horizontally in a grid as well
-  // achieving this by aligning to start, setting up the gaps how i want them, and then adding fake nodes at
-  // the start of each line to push the other nodes to the center
-  float gapFirstLine = m_buttonMenu->getContentWidth()/2 - lockedToggler->m_offButton->getScaledContentSize().width - lockedLabel->getScaledContentSize().width - layoutGap;
-  float gapSecondLine = m_buttonMenu->getContentWidth()/2 - vanillaToggler->m_offButton->getScaledContentSize().width - vanillaLabel->getScaledContentSize().width - layoutGap;
-  lockedLabel->setLayoutOptions(static_cast<AxisLayoutOptions *>(lockedLabel->getLayoutOptions())->setNextGap(gapFirstLine));
-  vanillaLabel->setLayoutOptions(static_cast<AxisLayoutOptions *>(vanillaLabel->getLayoutOptions())->setNextGap(gapSecondLine));
+  float gap = m_buttonMenu->getContentWidth()/2 - lockedToggler->m_offButton->getScaledContentSize().width - lockedLabel->getScaledContentSize().width - layoutGap;
+  lockedLabel->setLayoutOptions(static_cast<AxisLayoutOptions *>(lockedLabel->getLayoutOptions())->setNextGap(gap));
   m_buttonMenu->updateLayout();
-  float minRemainingSpace = m_buttonMenu->getContentWidth() - std::max(unlockedLabel->boundingBox().getMaxX(), customLabel->boundingBox().getMaxX());
-  CCNode *alignToCenter1 = CCNode::create();
-  CCNode *alignToCenter2 = CCNode::create();
-  alignToCenter1->setContentWidth(minRemainingSpace/2);
-  alignToCenter2->setContentWidth(minRemainingSpace/2);
-  alignToCenter1->setLayoutOptions(AxisLayoutOptions::create()->setNextGap(0));
-  alignToCenter2->setLayoutOptions(AxisLayoutOptions::create()->setNextGap(0));
-  m_buttonMenu->insertBefore(alignToCenter1, lockedToggler);
-  m_buttonMenu->insertBefore(alignToCenter2, vanillaToggler);
+  float minRemainingSpace = m_buttonMenu->getContentWidth() - unlockedLabel->boundingBox().getMaxX();
+  CCNode *alignToCenter = CCNode::create();
+  alignToCenter->setContentWidth(minRemainingSpace/2);
+  alignToCenter->setLayoutOptions(AxisLayoutOptions::create()->setNextGap(0));
+  m_buttonMenu->insertBefore(alignToCenter, lockedToggler);
   m_buttonMenu->updateLayout();
   m_buttonMenu->setPosition((m_size/2).width, separator->getPositionY() - m_buttonMenu->getContentHeight()/2 - delta/2);
 
@@ -248,7 +208,7 @@ bool FilterAndSortPopup::setup() {
   m_actionMenu->addChild(apply);
   m_actionMenu->addChild(SpacerNode::create(1));
   m_actionMenu->updateLayout();
-  m_actionMenu->setPosition((m_size/2).width, m_actionMenu->getContentHeight()/2 + delta/2 + BOTTOM_BORDER_SIZE);
+  m_actionMenu->setPosition((m_size/2).width, m_actionMenu->getContentHeight()/2 + delta/2 + VERTICAL_BORDER_SIZE);
   m_mainLayer->addChild(m_actionMenu);
   
   CCLayerColor* separator2 = CCLayerColor::create({ 0, 0, 0, 50 }, m_size.width - 2*HORIZONTAL_BORDER_SIZE, separator_height);
@@ -318,15 +278,14 @@ bool FilterAndSortPopup::setup() {
     "The <co>rotate filter</c> button inverts every individual filter and inverts the entire filter (effectively toggles the ALL to ANY and back).\n"
     "ALL filters must pass for an icon to be <cg>accepted</c>; the filters are:\n"
     "<cy>Lock State</c> - locked/unlocked and <cb>Locked</c>/<cb>Unlocked</c> is ticked\n"
-    "<cy>Icon Type</c> - vanilla/custom and <cb>Vanilla</c>/<cb>Custom</c> is ticked\n"
-    "<cy>Author</c> (vanilla only) - its author is ticked in <cb>Author</c>\n"
-    "<cy>Category</c> (vanilla only) - its category is ticked in <cb>Category</c>",
+    "<cy>Author</c> - its author is ticked in <cb>Author</c>\n"
+    "<cy>Category</c> - its category is ticked in <cb>Category</c>",
 
     0.5
   ));
   m_topMenu->setContentWidth(m_size.width - 2*HORIZONTAL_BORDER_SIZE - delta/2);
   m_topMenu->updateLayout();
-  m_topMenu->setPosition((m_size/2).width, m_size.height - TOP_BORDER_SIZE - m_topMenu->getContentHeight()/2);
+  m_topMenu->setPosition((m_size/2).width, m_size.height - VERTICAL_BORDER_SIZE - m_topMenu->getContentHeight()/2);
   m_mainLayer->addChild(m_topMenu);
 
   m_mainLayer->addChild(LinkedCCMenu::createLinked(m_mainLayer));
@@ -338,7 +297,7 @@ bool FilterAndSortPopup::setup() {
 
 FilterAndSortPopup* FilterAndSortPopup::create() {
     auto ret = new FilterAndSortPopup();
-    if (ret && ret->initAnchored(280, 200)) {
+    if (ret && ret->initAnchored(280, 170)) {
         ret->autorelease();
         return ret;
     }

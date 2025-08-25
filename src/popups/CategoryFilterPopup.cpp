@@ -14,15 +14,15 @@ void CategoryFilterPopup::onTopMenuButton(CCObject *sender) {
   CCMenuItemSpriteExtra *button = static_cast<CCMenuItemSpriteExtra *>(sender);
   int tag = button->getTag();
   for (size_t i = 0; i < m_buttonMenu->getChildrenCount(); i += 2) {
-    CCMenuItemToggler *toggler = getChild<CCMenuItemToggler>(m_buttonMenu, i);
+    CCMenuItemToggler *toggler = getChild<CCMenuItemToggler>(m_buttonMenu, int(i));
     toggler->toggle(tag == 0 ? true : tag == 1 ? false : !toggler->isToggled());
-    iconKitState.pendingSettings.categories[CATEGORIES_IN_ORDER[toggler->getTag()]] = toggler->isToggled();
+    iconKitState.pendingSettings.categories[CATEGORIES_IN_ORDER[size_t(toggler->getTag())]] = toggler->isToggled();
   }
 }
 
 void CategoryFilterPopup::toggleCategory(CCObject *sender) {
   CCMenuItemToggler *toggler = static_cast<CCMenuItemToggler *>(sender);
-  iconKitState.pendingSettings.categories[CATEGORIES_IN_ORDER[toggler->getTag()]] = !toggler->isToggled(); 
+  iconKitState.pendingSettings.categories[CATEGORIES_IN_ORDER[size_t(toggler->getTag())]] = !toggler->isToggled(); 
 }
 
 
@@ -40,15 +40,19 @@ void CategoryFilterPopup::addCategory(int tag, std::string category) {
   CCLabelBMFont *label = CCLabelBMFont::create(category.c_str(), "bigFont.fnt");
   
   float maxScale = 0.375f;
-  if (label->getContentSize().width * maxScale > (m_scrollLayerSize.width/2 - toggler->getContentSize().width)) {
-    maxScale = (m_scrollLayerSize.width/2 - toggler->getContentSize().width) / label->getContentSize().width;
-  }
+  float gap = static_cast<AxisLayout*>(m_buttonMenu->getLayout())->getGap();
+  float textWidth = label->getContentSize().width;
+  // technically, one of the gaps is not always the same as the other, it may get extended later to put the
+  // toggler and label exactly on the second half of the menu, but if that happens, then that means that the
+  // normal minimum of 0.375 succeeded, so this is fine
+  float maximumTextWidth = m_buttonMenuSize.width/2 - toggler->getScaledContentSize().width - gap - (!nextEven)*gap;
+  if (textWidth*maxScale > maximumTextWidth) maxScale = maximumTextWidth/textWidth;
   
   label->setLayoutOptions(
     AxisLayoutOptions::create()->
     setBreakLine(nextEven)->
     setSameLine(nextEven)->
-    setScaleLimits({}, maxScale)
+    setScaleLimits(0.f, maxScale)
   );
   toggler->toggle(iconKitState.pendingSettings.categories[category]);
 
@@ -62,12 +66,12 @@ void CategoryFilterPopup::customSetup() {
   this->setTitle("Category Filter");
   
   for (size_t i = 0; i < CATEGORIES_IN_ORDER.size(); i++)
-    addCategory(i, CATEGORIES_IN_ORDER[i]);
+    addCategory(int(i), CATEGORIES_IN_ORDER[i]);
 
   m_buttonMenu->updateLayout();
   
   for (size_t i = 0; i < m_buttonMenu->getChildrenCount()/2; i += 2) {
-    CCLabelBMFont *label = getChild<CCLabelBMFont>(m_buttonMenu, 2*i+1);
+    CCLabelBMFont *label = getChild<CCLabelBMFont>(m_buttonMenu, 2*int(i)+1);
     float gap = m_buttonMenuSize.width/2 - label->boundingBox().getMaxX();
     label->setLayoutOptions(static_cast<AxisLayoutOptions *>(label->getLayoutOptions())->setNextGap(gap));
   }

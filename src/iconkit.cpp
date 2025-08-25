@@ -6,8 +6,6 @@
 void IconKitSettings::initDefault() {
   locked = true;
   unlocked = true;
-  vanilla = true;
-  custom = true;
 
   invert = false;
 
@@ -36,8 +34,6 @@ void IconKitSettings::resetToDefault() {
 void IconKitSettings::selectAll() {
   locked = true;
   unlocked = true;
-  vanilla = true;
-  custom = true;
   for (std::string category : CATEGORIES_IN_ORDER) categories[category] = true;
   for (int author : AUTHORS_IN_ORDER) authors[author] = true;
 }
@@ -45,8 +41,6 @@ void IconKitSettings::selectAll() {
 void IconKitSettings::deselectAll() {
   locked = false;
   unlocked = false;
-  vanilla = false;
-  custom = false;
   for (std::string category : CATEGORIES_IN_ORDER) categories[category] = false;
   for (int author : AUTHORS_IN_ORDER) authors[author] = false;
 }
@@ -56,8 +50,6 @@ void IconKitSettings::changeFilterType() {
 
   locked = !locked;
   unlocked = !unlocked;
-  vanilla = !vanilla;
-  custom = !custom;
   for (std::string category : CATEGORIES_IN_ORDER) categories[category] = !categories[category];
   for (int author : AUTHORS_IN_ORDER) authors[author] = !authors[author];
 }
@@ -72,65 +64,114 @@ bool IconKitSettings::isSortedBy(SortType sortType) {
     return true;
 }
 
-IconKitSettings matjson::Serialize<IconKitSettings>::from_json(const matjson::Value &value) {
+Result<IconKitSettings> matjson::Serialize<IconKitSettings>::fromJson(const matjson::Value &value) {
   IconKitSettings settings;
-  settings.locked = value.get<bool>("locked");
-  settings.unlocked = value.get<bool>("unlocked");
-  settings.vanilla = value.get<bool>("vanilla");
-  settings.custom = value.get<bool>("custom");
-  settings.invert = value.get<bool>("invert");
-
-  settings.categories = matjson::Serialize<std::unordered_map<std::string, bool>>::from_json(value["categories"]);
+  IconKitSettings defaultSettings;
+  defaultSettings.initDefault();
+  settings.locked = value.get<bool>("locked").unwrapOr(defaultSettings.locked);
+  settings.unlocked = value.get<bool>("unlocked").unwrapOr(defaultSettings.unlocked);
+  settings.invert = value.get<bool>("invert").unwrapOr(defaultSettings.invert);
   
-  std::unordered_map<std::string, bool> intermediate(matjson::Serialize<std::unordered_map<std::string, bool>>::from_json(value["authors"]));
-  for (std::pair<std::string, bool> author_filter : intermediate)
-    settings.authors[std::stoi(author_filter.first)] = author_filter.second;
-
-  settings.showDenied = value.get<bool>("showDenied");
-  settings.separateAcceptedFromDenied = value.get<bool>("separateAcceptedFromDenied");
-  settings.dontRecolorNavigationButtons = value.get<bool>("dontRecolorNavigationButtons");
-  settings.noGapBetweenAcceptedAndDenied = value.get<bool>("noGapBetweenAcceptedAndDenied");
-  settings.hideNavigationMenuOnSinglePage = value.get<bool>("hideNavigationMenuOnSinglePage");
-
-  matjson::Array sortBy = value.get<matjson::Array>("sortBy");
-  for (size_t i = 0; i < SORT_TYPE_COUNT; i++) settings.sortBy[i] = static_cast<SortType>(sortBy[i].as<unsigned>());
+  if (!value.get("categories") || !(*value.get("categories")).isObject())
+    settings.categories = defaultSettings.categories;
+  else {
+    matjson::Value categories = *value.get("categories");
+    for (std::string category : CATEGORIES_IN_ORDER) {
+      if (!categories.get(category) || !(*categories.get(category)).isBool())
+        settings.categories[category] = defaultSettings.categories[category];
+      else
+        settings.categories[category] = *categories.get<bool>(category);
+    }
+  }
   
-  matjson::Array sortIsReverse = value.get<matjson::Array>("sortIsReverse");
-  for (size_t i = 0; i < SORT_TYPE_COUNT; i++) settings.sortIsReverse[i] = sortIsReverse[i].as<bool>();
+  if (!value.get("authors") || !(*value.get("authors")).isObject())
+    settings.authors = defaultSettings.authors;
+  else {
+    matjson::Value authors = *value.get("authors");
+    for (int author : AUTHORS_IN_ORDER) {
+      std::string authorString = numToString(author);
+      if (!authors.get(authorString) || !(*authors.get(authorString)).isBool())
+        settings.authors[author] = defaultSettings.authors[author];
+      else
+        settings.authors[author] = *authors.get<bool>(authorString);
+    }
+  }
   
-  settings.strictCategory = value.get<bool>("strictCategory");
+  settings.showDenied = value.get<bool>("showDenied").unwrapOr(defaultSettings.showDenied);
+  settings.separateAcceptedFromDenied = value.get<bool>("separateAcceptedFromDenied").unwrapOr(defaultSettings.separateAcceptedFromDenied);
+  settings.dontRecolorNavigationButtons = value.get<bool>("dontRecolorNavigationButtons").unwrapOr(defaultSettings.dontRecolorNavigationButtons);
+  settings.noGapBetweenAcceptedAndDenied = value.get<bool>("noGapBetweenAcceptedAndDenied").unwrapOr(defaultSettings.noGapBetweenAcceptedAndDenied);
+  settings.hideNavigationMenuOnSinglePage = value.get<bool>("hideNavigationMenuOnSinglePage").unwrapOr(defaultSettings.hideNavigationMenuOnSinglePage);
+  
+  if (!value.get("sortBy") || !value.get<std::vector<int>>("sortBy"))
+    for (size_t i = 0; i < SORT_TYPE_COUNT; i++) settings.sortBy[i] = static_cast<SortType>(defaultSettings.sortBy[i]);
+  else {
+    std::vector<int> sortBy = *value.get<std::vector<int>>("sortBy");
+    if (sortBy.size() != SORT_TYPE_COUNT) {
+      for (size_t i = 0; i < SORT_TYPE_COUNT; i++) settings.sortBy[i] = static_cast<SortType>(defaultSettings.sortBy[i]);
+    } else {
+      bool broken = false;
+      for (int i = 0; i < SORT_TYPE_COUNT; i++) {
+        if (std::find(sortBy.begin(), sortBy.end(), i) == sortBy.end()) {
+          for (size_t j = 0; j < SORT_TYPE_COUNT; j++) settings.sortBy[j] = static_cast<SortType>(defaultSettings.sortBy[j]);
+          broken = true;
+          break;
+        }
+      }
+      if (!broken) {
+        for (size_t i = 0; i < SORT_TYPE_COUNT; i++) settings.sortBy[i] = static_cast<SortType>(sortBy[i]);
+      }
+    }
+  }
+  
+  if (!value.get("sortIsReverse") || !value.get<std::vector<bool>>("sortIsReverse"))
+    for (size_t i = 0; i < SORT_TYPE_COUNT; i++) settings.sortIsReverse[i] = defaultSettings.sortIsReverse[i];
+  else {
+    std::vector<bool> sortIsReverse = *value.get<std::vector<bool>>("sortIsReverse");
+    if (sortIsReverse.size() != SORT_TYPE_COUNT) {
+      for (size_t i = 0; i < SORT_TYPE_COUNT; i++) settings.sortIsReverse[i] = defaultSettings.sortIsReverse[i];
+    } else {
+      for (size_t i = 0; i < SORT_TYPE_COUNT; i++) settings.sortIsReverse[i] = sortIsReverse[i];
+    }
+  }
 
-  return settings;
+  settings.strictCategory = value.get<bool>("strictCategory").unwrapOr(defaultSettings.strictCategory);
+
+  return Ok(settings);
 }
 
-matjson::Value matjson::Serialize<IconKitSettings>::to_json(const IconKitSettings &value) {
-  matjson::Object object;
-  object["locked"] = value.locked;
-  object["unlocked"] = value.unlocked;
-  object["vanilla"] = value.vanilla;
-  object["custom"] = value.custom;
-  object["invert"] = value.invert;
+matjson::Value matjson::Serialize<IconKitSettings>::toJson(const IconKitSettings &value) {
+  matjson::Value object = matjson::Value::object();
+  object.set("locked", value.locked);
+  object.set("unlocked", value.unlocked);
+  object.set("invert", value.invert);
 
-  object["categories"] = value.categories;
+  object.set("categories", value.categories);
 
   std::unordered_map<std::string, bool> intermediate;
   for (std::pair<int, bool> author_filter : value.authors)
     intermediate[std::to_string(author_filter.first)] = author_filter.second;
-  object["authors"] = intermediate;
+  object.set("authors", intermediate);
 
-  object["showDenied"] = value.showDenied;
-  object["separateAcceptedFromDenied"] = value.separateAcceptedFromDenied;
-  object["dontRecolorNavigationButtons"] = value.dontRecolorNavigationButtons;
-  object["noGapBetweenAcceptedAndDenied"] = value.noGapBetweenAcceptedAndDenied;
-  object["hideNavigationMenuOnSinglePage"] = value.hideNavigationMenuOnSinglePage;
+  object.set("showDenied", value.showDenied);
+  object.set("separateAcceptedFromDenied", value.separateAcceptedFromDenied);
+  object.set("dontRecolorNavigationButtons", value.dontRecolorNavigationButtons);
+  object.set("noGapBetweenAcceptedAndDenied", value.noGapBetweenAcceptedAndDenied);
+  object.set("hideNavigationMenuOnSinglePage", value.hideNavigationMenuOnSinglePage);
 
-  object["sortBy"] = matjson::Array();
-  for (size_t i = 0; i < SORT_TYPE_COUNT; i++) object["sortBy"].as_array().push_back(static_cast<int>(value.sortBy[i]));
+  object.set("sortBy", matjson::Value::array());
+  for (size_t i = 0; i < SORT_TYPE_COUNT; i++) {
+    int sortByAsInt = static_cast<int>(value.sortBy[i]);
+    (*object.get("sortBy")).push(sortByAsInt);
+  }
   
-  object["sortIsReverse"] = matjson::Array();
-  for (size_t i = 0; i < SORT_TYPE_COUNT; i++) object["sortIsReverse"].as_array().push_back(value.sortIsReverse[i]);
+  object.set("sortIsReverse", matjson::Value::array());
+  for (size_t i = 0; i < SORT_TYPE_COUNT; i++) {
+    bool sortIsReverse = value.sortIsReverse[i];
+    (*object.get("sortIsReverse")).push(sortIsReverse);
+  }
 
-  object["strictCategory"] = value.strictCategory;
+  object.set("strictCategory", value.strictCategory);
 
   return object;
 }

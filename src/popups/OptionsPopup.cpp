@@ -74,7 +74,7 @@ bool OptionsPopup::setup(bool gameVar, FilterAndSortPopup *parent) {
 
   this->setTitle(gameVar ? "Player Options" : "Icon Kit Display Options");
   
-  float titleMargin = m_bgSprite->boundingBox().getMaxY() - m_title->boundingBox().getMaxY() - TOP_BORDER_SIZE;
+  float titleMargin = m_bgSprite->boundingBox().getMaxY() - m_title->boundingBox().getMaxY() - VERTICAL_BORDER_SIZE;
   float titleHeight = m_title->getScale()*m_title->getContentSize().height;
   float realTitleHeight = 2*titleMargin + titleHeight;
   float separatorHeight = 1;

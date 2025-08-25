@@ -1,8 +1,12 @@
 #include <Geode/Geode.hpp>
+
+#pragma warning(push)
+#pragma warning(disable: 4265)  // enum exhaustiveness
 #include <Geode/modify/GJGarageLayer.hpp>
+#pragma warning(pop)
+
 #include <algorithm>
 
-#include <utils/IconButtonSpriteNoText.hpp>
 #include <utils/LinkedCCMenu.hpp>
 #include <constants.hpp>
 #include <iconkit.hpp>
@@ -10,43 +14,93 @@
 #include <popups/OptionsPopup.hpp>
 #include <popups/FilterAndSortPopup.hpp>
 
+#pragma warning(push)
+#pragma warning(disable: 4061)  // enum exhaustiveness
+#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
+#pragma warning(pop)
+
 using namespace geode::prelude;
 
-struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
-  
-  static void onModify(auto& self) {
-    // these 3 may sometimes skip running the original, so make sure they're the last function in the chain
-    Result<> result = self.setHookPriority("GJGarageLayer::onArrow", INT_MAX-1);
-    if (!result) log::error("Failed to set hook priority, some mods may not run their functions.");
-    result = self.setHookPriority("GJGarageLayer::onSelect", INT_MAX-1);
-    if (!result) log::error("Failed to set hook priority, some mods may not run their functions.");
-    result = self.setHookPriority("GJGarageLayer::onToggleItem", INT_MAX-1);
-    if (!result) log::error("Failed to set hook priority, some mods may not run their functions.");
-    // this should run after Capeling's Demons In Garage 2.2
-    // (and potentially other mods that mess with that area, but I'm not checking for those,
-    //  if another mod messes with that area, and you would like me to account for it, please open an issue)
-    // because it may remove the diamond shards section
-    result = self.setHookPriority("GJGarageLayer::init", -1);
-    if (!result) log::error("Failed to set hook priority, Demons In Garage 2.2 may be broken.");
-  }
+// these two should probably be part of a different mod, and maybe make the second one toggleable for people who actually like that bug
+struct OtherHookedGJGarageLayer : Modify<OtherHookedGJGarageLayer, GJGarageLayer> {
 
+  static void onModify(auto& self) {
+    // this is a reimplementation to fix a bug with robtop improperly calculating the pages, make sure it runs last
+    Result<> result = self.setHookPriority("GJGarageLayer::onArrow", INT_MAX-1);
+    if (!result) log::error("Failed to set hook priority, arrows may not work correctly.");
+    result = self.setHookPriorityBefore("GJGarageLayer::showUnlockPopup", "colon.lite_ad_chests");
+    if (!result && *result.err() != "Mod not found") log::error("Failed to set hook priority, unlock dialogue may show up multiple times.");
+  }
 
   void onArrow(CCObject *sender) {
     CCMenuItemSpriteExtra *arrow = static_cast<CCMenuItemSpriteExtra *>(sender);
-    int pageOffset = 2*(arrow->getTag() == 1) - 1;
-    int maxPage = (fakeCountForType(iconKitState.selectedIconType, INT_MAX)-1)/36;
-    maxPage = maxPage == -1 ? 0 : maxPage;
-    int currentPage = iconKitState.pageForIcon[iconKitState.selectedIconType];
-    int page = currentPage + pageOffset;
+    // robtop forgot to subtract 1 here, basically; if the icon count is, say, 36, robtop would just divide by 36,
+    // and get that the max page is 1, when, in fact, 36 icons fit onto page 0
+    // so there would be a page 1 that is just blank
+    int maxPage = (GameManager::get()->countForType(m_iconType)-1)/36;
+    int page = m_iconPages[m_iconType] + arrow->getTag();
     page = page > maxPage ? 0 : page < 0 ? maxPage : page;
-    setupPage(page, iconKitState.selectedIconType);
+    setupPage(page, m_iconType);
+  }
+
+  void showUnlockPopup(int itemID, UnlockType unlockType) {
+    if ((itemID == 13 || itemID == 71) && unlockType == UnlockType::Cube && GameManager::get()->isIconUnlocked(itemID, IconType::Cube)) {
+      ItemInfoPopup::create(itemID, UnlockType::Cube)->show();
+    } else {
+      GJGarageLayer::showUnlockPopup(itemID, unlockType);
+    }
+  }
+
+};
+
+struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
+
+  static void onModify(auto& self) {
+    // i should probably be using Priority::First and Priority::Replace here, but some mods still use raw numbers
+    // and i don't want it to break with them, so i will hold off until a gd update to change the priorities to proper ones
+
+    // these toggle the logic for when we should be messing with icon order, so make sure they toggle it on first, and toggle it off last
+    Result<> result = self.setHookPriority("GJGarageLayer::onArrow", INT_MIN);
+    if (!result) log::error("Failed to set hook priority, Garage Utilities may act weird.");
+    result = self.setHookPriority("GJGarageLayer::onNavigate", INT_MIN);
+    if (!result) log::error("Failed to set hook priority, Garage Utilities may act weird.");
+    result = self.setHookPriority("GJGarageLayer::selectTab", INT_MIN);
+    if (!result) log::error("Failed to set hook priority, Garage Utilities may act weird.");
+    result = self.setHookPriority("GJGarageLayer::init", INT_MIN);
+    if (!result) log::error("Failed to set hook priority, Garage Utilities may act weird.");
+    
+    // these may skip calling the original entirely (holding shift shows the item info popup, regardless of select status),
+    // so make sure they don't unintentionally call any hooks if we don't intend to call the original
+    result = self.setHookPriority("GJGarageLayer::onSelect", INT_MIN);
+    if (!result) log::error("Failed to set hook priority, Garage Utilities may act weird.");
+    result = self.setHookPriority("GJGarageLayer::onToggleItem", INT_MIN);
+    if (!result) log::error("Failed to set hook priority, some mods may not run their functions.");
+    
+    // this reimplements original
+    result = self.setHookPriority("GJGarageLayer::getItems", INT_MAX-1);
+    if (!result) log::error("Failed to set hook priority, Garage Utilities may act weird.");
+    
+    // ensure we are in control which page gets passed to setupPage
+    result = self.setHookPriority("GJGarageLayer::setupPage", INT_MIN);
+    if (!result) log::error("Failed to set hook priority, Garage Utilities may act weird.");
+  }
+    
+  void onArrow(CCObject *sender) {
+    iconKitState.shouldChangeIcons += 1;
+    GJGarageLayer::onArrow(sender);
+    iconKitState.shouldChangeIcons -= 1;
+  }
+  
+  void onNavigate(CCObject *sender) {
+    iconKitState.shouldChangeIcons += 1;
+    GJGarageLayer::onNavigate(sender);
+    iconKitState.shouldChangeIcons -= 1;
   }
 
   void selectTab(IconType iconType) {
-    iconKitState.selectedIconType = iconType;
+    iconKitState.shouldChangeIcons += 1;
     GJGarageLayer::selectTab(iconType);
-    if (!SHOULD_CHANGE_ICON_TYPE(iconType))
-      toggleNavigationMenus(false, false);
+    iconKitState.shouldChangeIcons -= 1;
   }
 
   void onToggleItem(CCObject *sender) {
@@ -61,196 +115,188 @@ struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
   }
 
   void onSelect(CCObject *sender) {
+    if (Mod::get()->getSettingValue<bool>("disable-shift-clicking-on-icons")) return GJGarageLayer::onSelect(sender);
+
     CCMenuItemSpriteExtra *item = static_cast<CCMenuItemSpriteExtra *>(sender);
     int itemID = item ? item->getTag() : -1;
 
-    UnlockType selectedUnlockType;
-    if (iconKitState.selectedIconType == IconType::DeathEffect)
-      selectedUnlockType = UnlockType::Death;
-    else if (!SHOULD_CHANGE_ICON_TYPE(iconKitState.selectedIconType))
-      // if someone reading this knows of a better way to fetch the icon type of a just clicked icon on a special page, please let me know, i hate this
-      // these 2 are nested differently, Streaks have 6 parents up until they reach the GJGarageLayer, but ship fires have 7
-      // animations have 3, but those don't matter since their callback is not onSelect, but onToggleItem
-      if (item->getParent()->getParent()->getParent()->getParent()->getParent()->getParent() == this) selectedUnlockType = UnlockType::Streak;
-      else selectedUnlockType = UnlockType::ShipFire;
-    else selectedUnlockType = ICON_TO_UNLOCK[iconKitState.selectedIconType];
-    
     // hold shift when clicking an icon to always open the icon popup, rather than selecting it, even if the icon is unlocked and unselected
-    if (!Mod::get()->getSettingValue<bool>("disable-shift-clicking-on-icons"))
-      if (itemID != -1 && CCDirector::get()->getKeyboardDispatcher()->getShiftKeyPressed()) {
-        showUnlockPopup(itemID, selectedUnlockType);
-        return;
-      }
-
-    if (!item || itemID == -1 || iconKitState.selectedIconType != IconType::Cube || GameManager::get()->isIconUnlocked(itemID, IconType::Cube))
-      return GJGarageLayer::onSelect(sender);
-    // only support unlocking the meltdown icon if moregames is installed because why not
-    if (itemID != 13 && (itemID != 71 || !Loader::get()->isModLoaded("bitz.moregames")))
-      return GJGarageLayer::onSelect(sender);
-    if (Mod::get()->getSettingValue<bool>("disable-unlocking-free-icons"))
-      return GJGarageLayer::onSelect(sender);
-
-    GameManager::get()->unlockIcon(itemID, IconType::Cube);
-    int itemPosition = displayToPosition(UnlockType::Cube, itemID);
-    int itemPage = (itemPosition - 1)/36;
-    recalculateIconOrder();
-    int maxPage = (fakeCountForType(IconType::Cube, INT_MAX)-1)/36;
-    if (itemPage > maxPage) itemPage = maxPage;
-    setupPage(itemPage, IconType::Cube);
-    showUnlockPopup(itemID, UnlockType::Cube);
-    AchievementManager::sharedState()->reportAchievementWithID(itemID == 13 ? "geometry.ach.rate" : "geometry.ach.mdrate", 100, false);
+    if (!CCDirector::get()->getKeyboardDispatcher()->getShiftKeyPressed()) return GJGarageLayer::onSelect(sender);
+    
+    std::string name = MoreIcons::getIconName(item);
+    if (!name.empty()) {
+      FLAlertLayer* popup = MoreIcons::createInfoPopup(name, item->m_iconType);
+      if (popup) popup->show();
+    } else {
+      showUnlockPopup(itemID, ICON_TO_UNLOCK[item->m_iconType]);
+    }
   }
   
+
   CCArray* getItems(int maxIconCount, int page, IconType iconType, int activeIcon) {
-    if (!SHOULD_CHANGE_ICON_TYPE(iconType))
+    if (!SHOULD_CHANGE_ICON_TYPE(iconType) || !iconKitState.shouldChangeIcons)
       return GJGarageLayer::getItems(maxIconCount, page, iconType, activeIcon);
 
-    // active icon is denied and we aren't showing denied, go to the first page instead
-    if (!activeIcon && page == -1) page = 0;
-    page = page == -1 ? (activeIcon - 1)/36 : page;
+    m_iconPages[iconType] = page;
     
-    // this is used to trick GJGarageLayer to stop drawing icons early if we are separating accepted from denied icons
-    // see the comments in the definition of this function to actuallly see what it does
-    maxIconCount = fakeCountForType(iconType, page);
+    GameManager* gameManager = GameManager::get();
+    UnlockType unlockType = ICON_TO_UNLOCK[iconType];
+    CCArray* finalArray = CCArray::create();
+    CCSize playerSquareContentSize = CCSprite::createWithSpriteFrameName("playerSquare_001.png")->getContentSize();
+    int finalIcon = std::min(maxIconCount, (page+1)*36);
     
-    return GJGarageLayer::getItems(maxIconCount, page, iconType, activeIcon);
+    m_currentIcon = nullptr;
+    for (int currentIcon = page*36 + 1; currentIcon <= finalIcon; currentIcon++) {
+      int currentIconDisplay = positionToDisplay(unlockType, currentIcon);
+      // this means we are separating accepted from denied, and we reached the padding space between those 2 sections
+      if (currentIconDisplay == 0) break;
+
+      bool isUnlocked = gameManager->isIconUnlocked(currentIconDisplay, iconType);
+      float iconScale = GJItemIcon::scaleForType(unlockType);
+      GJItemIcon* browserItem = GJItemIcon::createBrowserItem(unlockType, currentIconDisplay);
+      browserItem->setScale(iconScale);
+      CCMenuItemSpriteExtra* menuItem = CCMenuItemSpriteExtra::create(browserItem, nullptr, this, menu_selector(GJGarageLayer::onSelect));
+
+      menuItem->setContentSize(playerSquareContentSize);
+      browserItem->setPosition(playerSquareContentSize/2);
+      menuItem->setTag(currentIconDisplay);
+      menuItem->m_iconType = iconType;
+
+      finalArray->addObject(menuItem);
+      if (currentIconDisplay == activeIcon) m_currentIcon = menuItem;
+      if (!isUnlocked) browserItem->changeToLockedState(1.0 / iconScale);
+    }
+
+    return finalArray;
+
+  }
+
+  void defaultToggleNavigationMenus(IconType iconType) {
+    int vanillaIconCount = GameManager::get()->countForType(iconType);
+    int vanillaPageCount = (vanillaIconCount + 35)/36;
+
+    int moreIconsIconCount = int(MoreIcons::getIcons(iconType).size());
+    int moreIconsPageCount = (moreIconsIconCount + 35)/36;
+    
+    int totalIconCount = vanillaIconCount + moreIconsIconCount;
+    int totalPageCount = vanillaPageCount + moreIconsPageCount;
+
+    bool hideNavDotMenu = iconKitState.settings.hideNavigationMenuOnSinglePage ? (totalPageCount > 1) && (totalIconCount != 0) : (totalIconCount != 0);
+    bool hideArrows = totalPageCount > 1;
+
+    toggleNavigationMenus(hideNavDotMenu, hideArrows);
   }
 
   void setupPage(int page, IconType iconType) {
-    if (!SHOULD_CHANGE_ICON_TYPE(iconType))
-      return GJGarageLayer::setupPage(page, iconType);
+    if (iconKitState.stubOutSetupPageOnce) {
+      iconKitState.stubOutSetupPageOnce = false;
+      return;
+    }
+    if (!SHOULD_CHANGE_ICON_TYPE(iconType)) {
+      GJGarageLayer::setupPage(page, iconType);
+      // show pages and arrows only if there are More Icons pages, hide otherwise, which is vanilla behavior;
+      // we're not modifying the sorting order of these anyway, at least not now, in the future if we add More Icons filtering/sorting,
+      // the special page (and death effects, if MI implements them) may be filterable/sortable, even if it's just More Icons icons
+      // that we are filtering/sorting
+      int moreIconsIcons = int(MoreIcons::getIcons(m_iconType).size());
+      int moreIconsPages = (moreIconsIcons + 35)/36;
+      toggleNavigationMenus(bool(moreIconsPages), bool(moreIconsPages));
+      return;
+    }
+    iconKitState.shouldChangeIcons += 1;
     
-    UnlockType unlockType = ICON_TO_UNLOCK[iconType];
-    GameManager *gm = GameManager::get();
-
-    iconKitState.shouldChangeIcons = true;
-
-    page = iconKitState.overridePageForIcon[iconType] ? iconKitState.pageForIcon[iconType] : page;
-    iconKitState.overridePageForIcon[iconType] = false;
-
-    int activeIconDisplay = gm->activeIconForType(iconType);
-    int activeIconPosition = displayToPosition(unlockType, activeIconDisplay);
-    // active icon has been filtered out
-    if (!activeIconPosition && page == -1) page = 0;
-    page = page == -1 ? (activeIconPosition - 1)/36 : page;
-
+    // instead of overriding GameManager::activeIconForType to get setupPage to pick the correct page, never even pass -1 into setupPage to begin with
+    // if the active icon has been filtered out, page resolves to 0; this is the only sensible first option if there is no active icon anyway
+    page = page == -1 ? getActiveIconPage(iconType) : page;
     GJGarageLayer::setupPage(page, iconType);
-
-    iconKitState.shouldChangeIcons = false;
-
-    int fakeMaxIconCount = fakeCountForType(iconType, INT_MAX);
-    int maxPage = (fakeMaxIconCount - 1)/36;
     
-    int firstOnPage = page*36 + 1;
-    CCMenu *menu = getChild<CCMenu>(getChild<ListButtonPage>(getChild<ExtendedLayer>(getChild<BoomScrollLayer>(getChildOfType<ListButtonBar>(this, 0), 0), 0), 0), 0);
-    for (size_t i = 0; i < menu->getChildrenCount(); i++) {
-      int selectedIconPosition = firstOnPage + i;
-      int selectedIconDisplay = positionToDisplay(unlockType, selectedIconPosition);
-      CCMenuItemSpriteExtra *icon = getChild<CCMenuItemSpriteExtra>(menu, i);
-      icon->setTag(selectedIconDisplay);
-    }
+    recalculateNavdotMenu(page, iconType);
+    defaultToggleNavigationMenus(iconType);
     
-    recalculateCursor(activeIconDisplay);
-    recalculateNavdotMenu(page, iconType, unlockType);
-    toggleNavigationMenus(iconKitState.settings.hideNavigationMenuOnSinglePage ? maxPage : fakeMaxIconCount, maxPage);
-
-    iconKitState.pageForIcon[iconType] = page;
-  }
-  
-  void recalculateCursor(int activeIconDisplay) {
-    CCMenu* iconMenu = getChild<CCMenu>(getChild<ListButtonPage>(getChild<ExtendedLayer>(getChild<BoomScrollLayer>(m_iconSelection, 0), 0), 0), 0);
-    CCMenuItemSpriteExtra* activeIcon = static_cast<CCMenuItemSpriteExtra*>(iconMenu->getChildByTag(activeIconDisplay));
-    if (!activeIcon)
-      m_cursor1->setVisible(false);
-    else {
-      m_cursor1->setVisible(true);
-      m_cursor1->setPosition(iconMenu->convertToWorldSpace(activeIcon->getPosition()));
-    }
+    iconKitState.shouldChangeIcons -= 1;
   }
 
-  void toggleNavigationMenus(bool isNavdotMenuVisible, bool areArrowsVisible) {
-
-    // why the is it called this who named this i just wanna talk
-    // it's called the navdot menu in node ids
-    CCMenu* navdotMenu = m_iconSelectionMenu;
-
-    navdotMenu->setVisible(isNavdotMenuVisible);
-    navdotMenu->setEnabled(isNavdotMenuVisible);
-
-    // this is going to fail while in init, but i can't seem to find the
-    // menus by indices at this point, so i manually handle them after init
-    CCMenu *prevMenu = static_cast<CCMenu *>(getChildByID("prev-page-menu"));
-    if (prevMenu) {
-      getChild<CCMenuItemSpriteExtra>(prevMenu, 0)->setVisible(areArrowsVisible);
-      getChild<CCMenuItemSpriteExtra>(prevMenu, 0)->setEnabled(areArrowsVisible);
+  void toggleNavigationMenus(bool isNavDotMenuVisible, bool areArrowsVisible) {
+    m_navDotMenu->setVisible(isNavDotMenuVisible);
+    m_navDotMenu->setEnabled(isNavDotMenuVisible);
+    // hide this, i am handling it myself because:
+    // - i want the more icons nav menu to be centered if there are no vanilla icons
+    // - i want the page buttons to be in the same menu, so you can transfer touches
+    if (CCMenu* moreIconsNavDotMenu = typeinfo_cast<CCMenu*>(getChildByID("hiimjustin000.more_icons/navdot-menu"))) {
+      moreIconsNavDotMenu->setVisible(false);
+      moreIconsNavDotMenu->setEnabled(false);
     }
-
-    CCMenu *nextMenu = static_cast<CCMenu *>(getChildByID("next-page-menu"));
-    if (nextMenu) {
-      getChild<CCMenuItemSpriteExtra>(nextMenu, 0)->setVisible(areArrowsVisible);
-      getChild<CCMenuItemSpriteExtra>(nextMenu, 0)->setEnabled(areArrowsVisible);
-    }
-
+    m_leftArrow->setVisible(areArrowsVisible);
+    m_leftArrow->setEnabled(areArrowsVisible);
+    m_rightArrow->setVisible(areArrowsVisible);
+    m_rightArrow->setEnabled(areArrowsVisible);
   }
 
-  void recalculateNavdotMenu(size_t currentPage, IconType iconType, UnlockType unlockType) {
+  void recalculateNavdotMenu(int currentPage, IconType iconType) {
 
-    int maxPage = (fakeCountForType(iconType, INT_MAX)-1)/36;
-    maxPage = maxPage == -1 ? 0 : maxPage;
+    UnlockType unlockType = ICON_TO_UNLOCK[iconType];
     
-    // why the is it called this who named this i just wanna talk
-    // it's called the navdot menu in node ids
-    CCMenu* navdotMenu = m_iconSelectionMenu;
+    size_t acceptedCount = iconKitState.acceptedIcons[unlockType].size();
+    size_t deniedCount = iconKitState.deniedIcons[unlockType].size();
+    size_t lastAcceptedPage = acceptedCount ? (acceptedCount - 1)/36 : SIZE_MAX;
+    size_t firstDeniedPage = (
+      !iconKitState.settings.showDenied ?
+      SIZE_MAX : (
+        iconKitState.settings.separateAcceptedFromDenied ?
+        (acceptedCount ? lastAcceptedPage + 1 : (deniedCount ? 0 : SIZE_MAX)) :
+        (deniedCount ? acceptedCount/36 : SIZE_MAX)
+      )
+    );
     
-    // add missing pages to the navdot menu
-    for (int i = navdotMenu->getChildrenCount(); i <= maxPage; i++) {
-      CCSprite *spriteOff = CCSprite::createWithSpriteFrameName("gj_navDotBtn_off_001.png");
-      CCMenuItemSpriteExtra *button = CCMenuItemSpriteExtra::create(spriteOff, this, menu_selector(GJGarageLayer::onNavigate));
-      button->setTag(i);
-      navdotMenu->addChild(button);
-    }
-    // remove excess pages from the navdot menu
-    for (int i = navdotMenu->getChildrenCount(); i > maxPage+1; i--) {
-      navdotMenu->removeChild(getChild<CCMenuItemSpriteExtra>(navdotMenu, -1), true);
-    }
-    
-    size_t lastAcceptedPage = iconKitState.acceptedIcons[unlockType].empty() ? 0 : (iconKitState.acceptedIcons[unlockType].size()-1)/36;
-    size_t firstDeniedPage = lastAcceptedPage + 1;
-    if (!iconKitState.settings.separateAcceptedFromDenied)
-      firstDeniedPage = iconKitState.acceptedIcons[unlockType].size()/36;
-    if (iconKitState.acceptedIcons[unlockType].empty()) lastAcceptedPage = UINT_MAX, firstDeniedPage = 0;
-    if (!iconKitState.settings.showDenied) firstDeniedPage = UINT_MAX;
+    size_t vanillaPageCount = size_t((GameManager::get()->countForType(iconType)+35)/36);
 
-    for (size_t i = 0; i < navdotMenu->getChildrenCount(); i++) {
-      CCMenuItemSpriteExtra *button = getChild<CCMenuItemSpriteExtra>(navdotMenu, i);
+    int moreIconsIcons = int(MoreIcons::getIcons(m_iconType).size());
+    int moreIconsPageCount = (moreIconsIcons + 35)/36;
+
+    m_navDotMenu->removeAllChildren();
+    m_pageButtons->removeAllObjects();
+    CCSize winSize = CCDirector::sharedDirector()->getWinSize();
+    // set the gap to 0, and then manually set every per-element gap to 6.f
+    // axis layout doesn't let you specifically set a cross axis gap because fuck you
+    // it just uses the layout gap regardless, i think it even ignores the per-element prev/next gap
+    m_navDotMenu->setLayout(
+      RowLayout::create()->setGap(0.f)->setAxisAlignment(AxisAlignment::Center)->setGrowCrossAxis(true)
+    );
+
+    for (size_t i = 0; i < vanillaPageCount + moreIconsPageCount; i++) {
+      std::string_view spriteString;
+      if (int(i) == currentPage) {
+        // in the future, if we support sorting and filtering More Icons icons as well, do the same thing as below, but for custom icons
+        if (i >= vanillaPageCount) spriteString = "gj_navDotBtn_on_001.png";
+        // otherwise, do this for vanilla pages
+        else if (firstDeniedPage == lastAcceptedPage && i == lastAcceptedPage && !iconKitState.settings.dontRecolorNavigationButtons) spriteString = "GU_navDotButton_mixed.png"_spr;
+        else if (i >= firstDeniedPage && !iconKitState.settings.dontRecolorNavigationButtons) spriteString = "GU_navDotButton_denied.png"_spr;
+        else spriteString = "gj_navDotBtn_on_001.png";
+      } else spriteString = "gj_navDotBtn_off_001.png";
+      CCSprite *sprite = CCSprite::createWithSpriteFrameName(spriteString.data());
+      sprite->setScale(0.9f);
+      CCMenuItemSpriteExtra *button = CCMenuItemSpriteExtra::create(sprite, this, menu_selector(GJGarageLayer::onNavigate));
+      button->setTag(int(i));
+      m_navDotMenu->addChild(button);
+      m_pageButtons->addObject(button);
+
+      float gap = 6.f;
+      bool breakLine = i == vanillaPageCount - 1;
       if (i == firstDeniedPage && firstDeniedPage && iconKitState.settings.separateAcceptedFromDenied && !iconKitState.settings.noGapBetweenAcceptedAndDenied)
-        button->setLayoutOptions(AxisLayoutOptions::create()->setPrevGap(25.f));
-      else
-        button->setLayoutOptions(AxisLayoutOptions::create()->setPrevGap({}));
-      
-      if (i == currentPage && firstDeniedPage == lastAcceptedPage && i == lastAcceptedPage && !iconKitState.settings.dontRecolorNavigationButtons) {
-        CCSprite *spriteOnMixed = CCSprite::createWithSpriteFrameName("GU_navDotButton_mixed.png"_spr);
-        spriteOnMixed->setScale(0.9f);
-        button->setNormalImage(spriteOnMixed);
-        button->setContentSize(button->getContentSize() * 0.9f);
-      } else if (i == currentPage && i >= firstDeniedPage && !iconKitState.settings.dontRecolorNavigationButtons) {
-        CCSprite *spriteOnDenied = CCSprite::createWithSpriteFrameName("GU_navDotButton_denied.png"_spr);
-        spriteOnDenied->setScale(0.9f);
-        button->setNormalImage(spriteOnDenied);
-        button->setContentSize(button->getContentSize() * 0.9f);
-      } else if (i == currentPage) {
-        CCSprite *spriteOn = CCSprite::createWithSpriteFrameName("gj_navDotBtn_on_001.png");
-        spriteOn->setScale(0.9f);
-        button->setNormalImage(spriteOn);
-        button->setContentSize(button->getContentSize() * 0.9f);
-      } else {
-        CCSprite *spriteOff = CCSprite::createWithSpriteFrameName("gj_navDotBtn_off_001.png");
-        spriteOff->setScale(0.9f);
-        button->setNormalImage(spriteOff);
-        button->setContentSize(button->getContentSize() * 0.9f);
-      }
+        // if there was another button between those 2 buttons, and that button was invisible, this is what the gap between those 2 buttons would look like
+        gap = button->getContentWidth() + 2*gap;
+
+      button->setLayoutOptions(AxisLayoutOptions::create()->setPrevGap(gap)->setBreakLine(breakLine));
     }
-    navdotMenu->updateLayout();
+    m_navDotMenu->updateLayout();
+    m_navDotMenu->setPositionY(25.f);
+
+    // more icons tries getting the first page, since that always exists in vanilla
+    // it may not exist with this mod, however, so put a fake one in, it won't be visible anyway
+    // since it's not in the actual menu
+    if (m_pageButtons->count() == 0 && Loader::get()->isModLoaded("hiimjustin000.more_icons")) {
+      m_pageButtons->addObject(CCMenuItemSpriteExtra::create(CCSprite::create(), nullptr, nullptr));
+    }
   }
   
   void onPlayerOptions(CCObject *) {
@@ -261,66 +307,77 @@ struct HookedGJGarageLayer : Modify<HookedGJGarageLayer, GJGarageLayer> {
     FilterAndSortPopup::create()->show();
   }
 
+  void createPlayerOptionsButton() {
+    CCNode* backMenu = getChildByID("back-menu");
+    if (!backMenu) return;
+    CCMenuItemSpriteExtra* playerOptionsButton = CCMenuItemSpriteExtra::create(
+      CCSprite::createWithSpriteFrameName("GJ_optionsBtn02_001.png"),
+      this,
+      menu_selector(HookedGJGarageLayer::onPlayerOptions)
+    );
+    playerOptionsButton->setID("player-options-button"_spr);
+    backMenu->addChild(playerOptionsButton);
+    backMenu->updateLayout();
+  }
+
+  void createFilterAndSortButton() {
+    CCNode* shardsMenu = getChildByID("shards-menu");
+    if (!shardsMenu) return;
+
+    CCSprite* filterIcon = CCSprite::createWithSpriteFrameName("GJ_filterIcon_001.png");
+    CCSprite* sortIcon = CCSprite::createWithSpriteFrameName("GJ_sortIcon_001.png");
+    filterIcon->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits(1/3.0f, {}));
+    sortIcon->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits(1/3.0f, {}));
+    CCNode* filterAndSortCollection = CCNode::create();
+
+    filterAndSortCollection->setLayout(RowLayout::create()->setAutoScale(true)->setGap(0));
+    filterAndSortCollection->addChild(filterIcon);
+
+    filterAndSortCollection->addChild(sortIcon);
+
+    // ensure we have a content size before creating the based button sprite, as it rescales stuff automatically to fit into the button
+    filterAndSortCollection->setContentSize({30, 30});
+    filterAndSortCollection->setAnchorPoint({0.5, 0.5});
+    filterAndSortCollection->updateLayout();
+    
+    CircleButtonSprite* filterAndSortSprite = CircleButtonSprite::create(
+        filterAndSortCollection, CircleBaseColor::Green, CircleBaseSize::Small
+    );
+
+    CCMenuItemSpriteExtra* filterAndSort = CCMenuItemSpriteExtra::create(filterAndSortSprite, this, menu_selector(HookedGJGarageLayer::onFilterAndSort));
+    filterAndSort->setID("filter-and-sort-button"_spr);
+    
+    shardsMenu->addChild(filterAndSort);
+    shardsMenu->updateLayout();
+  }
+
+  void removeDiamondShards() {
+    if (CCNode* diamondShardsIcon = getChildByID("diamond-shards-icon")) diamondShardsIcon->setVisible(false);
+    if (CCNode* diamondShardsLabel = getChildByID("diamond-shards-label")) diamondShardsLabel->setVisible(false);
+    CCNode* statMenu = getChildByID("capeling.garage-stats-menu/stats-menu");
+    if (!statMenu) return;
+    CCNode* shardsContainer = statMenu->getChildByID("diamond-shards-container");
+    if (!shardsContainer) return;
+    shardsContainer->removeFromParent();
+    statMenu->updateLayout();
+  }
+
   bool init() override {
     recalculateIconOrder();
-    if (!GJGarageLayer::init()) return false;
 
-    if (!Mod::get()->getSettingValue<bool>("hide-player-options-button")) {
-      CCMenu* backMenu = static_cast<CCMenu *>(getChildByID("back-menu"));
+    iconKitState.shouldChangeIcons += 1;
 
-      CCSprite* playerOptionsSprite = CCSprite::createWithSpriteFrameName("GJ_optionsBtn02_001.png");
-      CCMenuItemSpriteExtra* playerOptions = CCMenuItemSpriteExtra::create(playerOptionsSprite, this, menu_selector(HookedGJGarageLayer::onPlayerOptions));
-      
-      backMenu->addChild(playerOptions);
-      backMenu->updateLayout();
-    }
-    if (!Mod::get()->getSettingValue<bool>("hide-filter-and-sort-button")) {
-      CCMenu* shardsMenu = static_cast<CCMenu *>(getChildByID("shards-menu"));
-      CCSprite* filterIcon = CCSprite::createWithSpriteFrameName("GJ_filterIcon_001.png");
-      CCSprite* sortIcon = CCSprite::createWithSpriteFrameName("GJ_sortIcon_001.png");
-      filterIcon->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits(1/3.0f, {}));
-      sortIcon->setLayoutOptions(AxisLayoutOptions::create()->setScaleLimits(1/3.0f, {}));
-      CCNode* filterAndSortCollection = CCNode::create();
-      filterAndSortCollection->setLayout(RowLayout::create()->setAutoScale(true)->setGap(0));
-      filterAndSortCollection->addChild(filterIcon);
-      filterAndSortCollection->addChild(sortIcon);
+    if (!GJGarageLayer::init()) { iconKitState.shouldChangeIcons -= 1; return false; }
 
-      IconButtonSpriteNoText* filterAndSortSprite = IconButtonSpriteNoText::create("GJ_button_01.png", filterAndSortCollection);
-      CCMenuItemSpriteExtra* filterAndSort = CCMenuItemSpriteExtra::create(filterAndSortSprite, this, menu_selector(HookedGJGarageLayer::onFilterAndSort));
+    recalculateNavdotMenu(m_iconPages[m_iconType], m_iconType);
+    defaultToggleNavigationMenus(m_iconType);
 
-      filterAndSortCollection->setContentSize(filterAndSortSprite->getContentSize() / sqrt(2));
-      filterAndSortCollection->setAnchorPoint({0.5, 0.5});
-      filterAndSortCollection->updateLayout();
-      
-      shardsMenu->addChild(filterAndSort);
-      shardsMenu->updateLayout();
-    }
+    iconKitState.shouldChangeIcons -= 1;
 
-    if (Mod::get()->getSettingValue<bool>("remove-diamond-shards")) {
-      CCSprite *diamondShardsIcon = static_cast<CCSprite *>(getChildByID("diamond-shards-icon"));
-      CCLabelBMFont *diamondShardsLabel = static_cast<CCLabelBMFont *>(getChildByID("diamond-shards-label"));
-      CCSprite *demonsIcon = static_cast<CCSprite *>(getChildByID("demons-icon"));
-      CCLabelBMFont *demonsLabel = static_cast<CCLabelBMFont *>(getChildByID("demons-label"));
-      // very hardcoded, this part should really be made a layout so that it's easier to add whatever
-      // you want here, which i initially wanted to do, but i decided against it since it's probably not
-      // in scope for this mod, maybe some api mod? for now, i'll just account for Capeling's mod since
-      // that's the only mod on the index I know that changes this area
-      if (!demonsLabel) {
-        diamondShardsLabel->setVisible(false);
-        diamondShardsIcon->setVisible(false);
-      } else {
-        float spacing = diamondShardsLabel->boundingBox().getMaxY() - demonsLabel->boundingBox().getMaxY();
-        demonsIcon->setPositionY(demonsIcon->getPositionY() + spacing);
-        demonsLabel->setPositionY(demonsLabel->getPositionY() + spacing);
-        diamondShardsLabel->setVisible(false);
-        diamondShardsIcon->setVisible(false);
-      }
-    }
-
-    int fakeCount = fakeCountForType(IconType::Cube, INT_MAX);
-    int maxPage = (fakeCount-1)/36;
-    toggleNavigationMenus(iconKitState.settings.hideNavigationMenuOnSinglePage ? maxPage : fakeCount, maxPage);
-
+    if (!Mod::get()->getSettingValue<bool>("hide-player-options-button")) createPlayerOptionsButton();
+    if (!Mod::get()->getSettingValue<bool>("hide-filter-and-sort-button")) createFilterAndSortButton();
+    if (Mod::get()->getSettingValue<bool>("remove-diamond-shards")) removeDiamondShards();
+    
     return true;
   }
 };

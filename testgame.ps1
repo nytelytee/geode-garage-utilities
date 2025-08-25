@@ -10,7 +10,7 @@ if ($force -And (Test-Path -Path build)) {
 }
 
 if (-Not (Test-Path -Path build)) {
-	cmake -B build -A win32
+	cmake -B build -A x64
 }
 
 cmake --build build --config RelWithDebInfo

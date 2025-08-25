@@ -1,16 +1,6 @@
 #include<constants.hpp>
 
-std::unordered_map<UnlockType, unsigned> VANILLA_MAX_ICONS = {
-  {UnlockType::Cube,   484},
-  {UnlockType::Ship,   169},
-  {UnlockType::Ball,   118},
-  {UnlockType::Bird,   149},
-  {UnlockType::Dart,    96},
-  {UnlockType::Robot,   68},
-  {UnlockType::Spider,  69},
-  {UnlockType::Swing,   43},
-  {UnlockType::Jetpack,  5},
-};
+std::unordered_map<UnlockType, int> VANILLA_MAX_ICONS;
 
 std::unordered_map<IconType, UnlockType> ICON_TO_UNLOCK = {
   {IconType::Cube,    UnlockType::Cube},
@@ -22,6 +12,11 @@ std::unordered_map<IconType, UnlockType> ICON_TO_UNLOCK = {
   {IconType::Spider,  UnlockType::Spider},
   {IconType::Swing,   UnlockType::Swing},
   {IconType::Jetpack, UnlockType::Jetpack},
+  
+  {IconType::DeathEffect, UnlockType::Death},
+  {IconType::Special, UnlockType::Streak},
+  {IconType::Item, UnlockType::GJItem},
+  {IconType::ShipFire, UnlockType::ShipFire},
 };
 
 std::unordered_map<UnlockType, IconType> UNLOCK_TO_ICON = {
@@ -34,6 +29,11 @@ std::unordered_map<UnlockType, IconType> UNLOCK_TO_ICON = {
   {UnlockType::Spider,  IconType::Spider},
   {UnlockType::Swing,   IconType::Swing},
   {UnlockType::Jetpack, IconType::Jetpack},
+  
+  {UnlockType::Death, IconType::DeathEffect},
+  {UnlockType::Streak, IconType::Special},
+  {UnlockType::GJItem, IconType::Item},
+  {UnlockType::ShipFire, IconType::ShipFire},
 };
 
 std::vector<IconType> ICON_TYPES_TO_CHANGE = {
@@ -67,7 +67,7 @@ std::unordered_map<UnlockType, std::string> ICON_NAMES = {
   {static_cast<UnlockType>(0), "NULL"},
 };
 
-std::unordered_map<UnlockType, std::vector<unsigned>> SPECIAL_UNLOCK_ORDER = {
+std::unordered_map<UnlockType, std::vector<int>> SPECIAL_UNLOCK_ORDER = {
   {UnlockType::Streak,   {1, 2, 3, 4, 5, 6, 7}},
   {UnlockType::ShipFire, {1, 2, 3, 4, 5, 6}},
   {UnlockType::GJItem,   {18, 19, 20}}, // there are other items, but these are the ones shown in the icon kit as animations
@@ -96,7 +96,7 @@ std::unordered_map<UnlockType, std::vector<unsigned>> SPECIAL_UNLOCK_ORDER = {
   }},
 };
 
-std::vector<std::pair<unsigned, UnlockType>> SHARDS_OF_POWER_UNLOCK_ORDER = {
+std::vector<std::pair<int, UnlockType>> SHARDS_OF_POWER_UNLOCK_ORDER = {
   { 95, UnlockType::Cube},   { 24, UnlockType::Ball},  {  9, UnlockType::Robot},  { 29, UnlockType::Ship},   {  2, UnlockType::Death},  // fire
   { 84, UnlockType::Cube},   { 26, UnlockType::Ball},  {  6, UnlockType::Spider}, { 31, UnlockType::Ship},   {  9, UnlockType::Death},  // ice
   { 22, UnlockType::Ball},   { 20, UnlockType::Bird},  {105, UnlockType::Cube},   {  5, UnlockType::Spider}, {  4, UnlockType::Death},  // poison
@@ -110,7 +110,7 @@ std::vector<std::pair<unsigned, UnlockType>> SHARDS_OF_POWER_UNLOCK_ORDER = {
   { 78, UnlockType::Ship},   { 78, UnlockType::Ball},  { 35, UnlockType::Spider}, {395, UnlockType::Cube},   {148, UnlockType::Bird},   // soul
   {388, UnlockType::Cube},   {106, UnlockType::Ball},  { 62, UnlockType::Dart},   { 84, UnlockType::Bird},   { 20, UnlockType::Death},  // tier 2
 };
-std::unordered_map<PathType, std::vector<std::pair<unsigned, UnlockType>>> PATHS_UNLOCK_ORDER = {
+std::unordered_map<PathType, std::vector<std::pair<int, UnlockType>>> PATHS_UNLOCK_ORDER = {
   {PathType::Fire, {
     {213, UnlockType::Cube},
     {48,  UnlockType::Col1},
@@ -256,7 +256,6 @@ std::unordered_map<PathType, std::vector<std::pair<unsigned, UnlockType>>> PATHS
 std::unordered_map<SortType, std::string> SORT_TYPE_NAMES = {
   {SortType::Number,     "Number"},
   {SortType::LockStatus, "Lock Status"},
-  {SortType::Type,       "Vanilla/Custom"},
   {SortType::Category,   "Category"},
   {SortType::Author,     "Author"},
 };

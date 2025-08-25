@@ -7,7 +7,7 @@
 #include <popups/FilterAndSortPopup.hpp>
 
 #include <utils/LinkedCCMenu.hpp>
-#include <utils/IconButtonSpriteNoText.hpp>
+#include <utils/SortIconButtonSprite.hpp>
 #include <utils/CCMenuItemTogglerSpoof.hpp>
 
 using namespace geode::prelude;
@@ -56,10 +56,10 @@ void SortPopup::onArrow(CCObject *sender) {
   CCMenuItemSpriteExtra *sortOrder = getChild<CCMenuItemSpriteExtra>(menu, 2);
   CCMenuItemSpriteExtra *swapWithSortOrder = getChild<CCMenuItemSpriteExtra>(swapWithMenu, 2);
 
-  std::string sortOrderState = getChild<IconButtonSpriteNoText>(sortOrder, 0)->getBGName();
-  std::string swapWithOrderState = getChild<IconButtonSpriteNoText>(swapWithSortOrder, 0)->getBGName();
-  getChild<IconButtonSpriteNoText>(sortOrder, 0)->setBG(swapWithOrderState.c_str(), false);
-  getChild<IconButtonSpriteNoText>(swapWithSortOrder, 0)->setBG(sortOrderState.c_str(), false);
+  std::string sortOrderState = getChild<SortIconButtonSprite>(sortOrder, 0)->getBGName();
+  std::string swapWithOrderState = getChild<SortIconButtonSprite>(swapWithSortOrder, 0)->getBGName();
+  getChild<SortIconButtonSprite>(sortOrder, 0)->setBG(swapWithOrderState.c_str(), false);
+  getChild<SortIconButtonSprite>(swapWithSortOrder, 0)->setBG(sortOrderState.c_str(), false);
 
   CCLabelBMFont *label = getChild<CCLabelBMFont>(m_sortingList, labelIndex);
   CCLabelBMFont *swapWithLabel = getChild<CCLabelBMFont>(m_sortingList, swapWithLabelIndex);
@@ -78,24 +78,24 @@ void SortPopup::onReverseSortOrder(CCObject *sender) {
   int listItem = item->getTag();
   iconKitState.pendingSettings.sortIsReverse[listItem] = !iconKitState.pendingSettings.sortIsReverse[listItem];
   if (iconKitState.pendingSettings.sortIsReverse[listItem])
-    getChild<IconButtonSpriteNoText>(item, 0)->setBG("GJ_button_01.png", false);
+    getChild<SortIconButtonSprite>(item, 0)->setBG("GJ_button_01.png", false);
   else
-    getChild<IconButtonSpriteNoText>(item, 0)->setBG("GJ_button_04.png", false);
+    getChild<SortIconButtonSprite>(item, 0)->setBG("GJ_button_04.png", false);
 }
 
 bool SortPopup::setup(FilterAndSortPopup *parent) {
   parentPopup = parent;
   this->setTitle("Sort");
   float separator_height = 1;
-  float title_margin = m_bgSprite->boundingBox().getMaxY() - m_title->boundingBox().getMaxY() - TOP_BORDER_SIZE;
+  float title_margin = m_bgSprite->boundingBox().getMaxY() - m_title->boundingBox().getMaxY() - VERTICAL_BORDER_SIZE;
   float title_height = m_title->getScaledContentSize().height;
   float real_title_height = 2*title_margin + title_height;
 
-  CCSize contentSize = m_size - CCPoint{2*HORIZONTAL_BORDER_SIZE, real_title_height + BOTTOM_BORDER_SIZE + TOP_BORDER_SIZE};
+  CCSize contentSize = m_size - CCPoint{2*HORIZONTAL_BORDER_SIZE, real_title_height + 2*VERTICAL_BORDER_SIZE};
   
   m_sortingList = CCNode::create();
   m_sortingList->setAnchorPoint({0, 1});
-  m_sortingList->setPosition(HORIZONTAL_BORDER_SIZE, BOTTOM_BORDER_SIZE + contentSize.height);
+  m_sortingList->setPosition(HORIZONTAL_BORDER_SIZE, VERTICAL_BORDER_SIZE + contentSize.height);
 
   CCLayerColor  *listItemBackgrounds[SORT_TYPE_COUNT];
   CCLabelBMFont *listItemNumbers[SORT_TYPE_COUNT];
@@ -139,15 +139,15 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
   for (int i = 0; i < SORT_TYPE_COUNT; i++) {
 
     CCSprite *moveUpSprite = CCSprite::createWithSpriteFrameName("edit_upBtn_001.png");
-    IconButtonSpriteNoText *moveUpButtonSprite = IconButtonSpriteNoText::create("GJ_button_04.png", moveUpSprite);
+    SortIconButtonSprite *moveUpButtonSprite = SortIconButtonSprite::create("GJ_button_04.png", moveUpSprite);
 
     CCSprite *moveDownSprite = CCSprite::createWithSpriteFrameName("edit_downBtn_001.png");
-    IconButtonSpriteNoText *moveDownButtonSprite = IconButtonSpriteNoText::create("GJ_button_04.png", moveDownSprite);
+    SortIconButtonSprite *moveDownButtonSprite = SortIconButtonSprite::create("GJ_button_04.png", moveDownSprite);
 
     CCSprite *reverseSortOrderSprite = CCSprite::createWithSpriteFrameName("GJ_sortIcon_001.png");
     reverseSortOrderSprite->setRotation(90);
     const char* bgname = iconKitState.pendingSettings.sortIsReverse[i] ? "GJ_button_01.png" : "GJ_button_04.png";
-    IconButtonSpriteNoText *reverseSortOrderButtonSprite = IconButtonSpriteNoText::create(bgname, reverseSortOrderSprite);
+    SortIconButtonSprite *reverseSortOrderButtonSprite = SortIconButtonSprite::create(bgname, reverseSortOrderSprite);
     
     moveUpButtonSprite->setScale((listItemSize.height - 2*pad) / moveUpButtonSprite->getScaledContentSize().height);
     moveDownButtonSprite->setScale((listItemSize.height - 2*pad) / moveDownButtonSprite->getScaledContentSize().height);
@@ -255,7 +255,7 @@ bool SortPopup::setup(FilterAndSortPopup *parent) {
     0.5f
   );
   infoMenu->addChild(infoButton);
-  infoButton->setPosition(m_size - CCPoint{HORIZONTAL_BORDER_SIZE, TOP_BORDER_SIZE} - infoButton->getScaledContentSize()/2 - infoButton->getScaledContentSize()/4);
+  infoButton->setPosition(m_size - CCPoint{HORIZONTAL_BORDER_SIZE, VERTICAL_BORDER_SIZE} - infoButton->getScaledContentSize()/2 - infoButton->getScaledContentSize()/4);
 
   m_mainLayer->addChild(togglerMenu);
   m_mainLayer->addChild(infoMenu);
